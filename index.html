@@ -1,0 +1,1484 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ordini materiale d'ufficio · Punti vendita</title>
+<!-- Unica libreria esterna: PDF.js (estrazione testo dai PDF Lyreco) -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{
+  --navy:#0B2A5B; --blue:#1E5AA8; --green:#8FD694; --green-bg:#D9F2DB; --ink:#111111;
+  --muted:#5A6372; --line:#D7DCE4; --bg:#F3F5F8; --card:#FFFFFF; --row-alt:#F7F9FC;
+  --yellow:#E9B824; --yellow-bg:#FFF4D1; --red:#D0453F; --red-bg:#FBE2E1; --radius:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;color:var(--ink);background:var(--bg);font-size:14px;line-height:1.45}
+button,input,select,textarea{font:inherit;color:inherit}
+h1,h2,h3{margin:0;line-height:1.25}
+a{color:var(--blue)}
+
+/* ---------- Header ---------- */
+header.app{background:var(--navy);color:#fff;border-bottom:3px solid var(--ink)}
+header.app .inner{max-width:1280px;margin:0 auto;padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+header.app h1{font-size:19px;font-weight:700;letter-spacing:.2px}
+header.app .sub{font-size:12px;opacity:.8}
+.toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+
+/* ---------- Bottoni ---------- */
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:8px;padding:7px 12px;cursor:pointer;font-weight:600;font-size:13px;white-space:nowrap}
+.btn:hover{border-color:var(--blue)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:var(--green);border-color:var(--ink);color:var(--ink)}
+.btn.primary:hover{background:#7ccb82}
+.btn.blue{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.blue:hover{background:var(--navy)}
+.btn.ghost{background:transparent;color:#fff;border-color:rgba(255,255,255,.35)}
+.btn.ghost:hover{border-color:#fff}
+.btn.danger{color:var(--red);border-color:#e9b7b5}
+.btn.danger:hover{background:var(--red-bg)}
+.btn.sm{padding:4px 8px;font-size:12px}
+.btn.big{padding:10px 18px;font-size:15px}
+
+main{max-width:1280px;margin:0 auto;padding:20px}
+
+/* ---------- Card / KPI ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:16px}
+.card h2{font-size:16px;color:var(--navy);margin-bottom:10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;border-top:4px solid var(--blue)}
+.kpi .k-lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;font-weight:600}
+.kpi .k-val{font-size:24px;font-weight:700;color:var(--navy);margin-top:4px}
+.kpi .k-sub{font-size:12px;color:var(--muted)}
+.kpi.accent{border-top-color:var(--green)}
+.m3{display:grid;gap:2px;margin-top:6px}
+.m3>div{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.m3 .lbl{font-size:12px;color:var(--muted)}
+.m3 .val{font-variant-numeric:tabular-nums;font-weight:600}
+.m3 .val.strong{color:var(--navy);font-size:16px}
+
+/* ---------- Tabelle ---------- */
+.table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--radius);background:#fff}
+table{width:100%;border-collapse:collapse}
+th,td{padding:8px 10px;text-align:left;vertical-align:middle;border-bottom:1px solid var(--line)}
+thead th{background:var(--navy);color:#fff;font-size:12px;font-weight:600;letter-spacing:.2px;white-space:nowrap;position:sticky;top:0}
+thead th.sortable{cursor:pointer;user-select:none}
+thead th.sortable:hover{background:var(--blue)}
+tbody tr:nth-child(even){background:var(--row-alt)}
+tbody tr.clickable{cursor:pointer}
+tbody tr.clickable:hover{background:var(--green-bg)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+tr.expanded>td{background:#fff;padding:0 0 0 24px}
+tr.open{background:var(--green-bg)!important}
+.inner-table th{background:#E8EEF7;color:var(--ink)}
+.calc{color:var(--blue);font-weight:700;cursor:help}
+.foot-note{font-size:12px;color:var(--muted);margin-top:6px}
+.pvname{background:none;border:0;padding:0;color:var(--navy);font-weight:700;cursor:pointer;text-align:left;font-size:14px}
+.pvname:hover{text-decoration:underline;color:var(--blue)}
+
+/* ---------- Stato ---------- */
+.dot{display:inline-block;width:12px;height:12px;border-radius:50%;border:1px solid rgba(0,0,0,.25);vertical-align:middle}
+.dot.green{background:var(--green)} .dot.yellow{background:var(--yellow)} .dot.red{background:var(--red)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge.green{background:var(--green-bg);color:#1f6b28} .badge.yellow{background:var(--yellow-bg);color:#7a5a00}
+.badge.red{background:var(--red-bg);color:#962a25} .badge.grey{background:#ECEFF3;color:var(--muted)}
+.badge.blue{background:#E2ECF9;color:var(--navy)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);align-items:center}
+
+.list-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:6px 0 10px}
+.search{flex:1;min-width:220px;max-width:420px;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.search:focus,.fld input:focus,.fld select:focus,select:focus,textarea:focus,td input:focus{outline:2px solid var(--blue);outline-offset:0;border-color:var(--blue)}
+
+/* ---------- Dettaglio ---------- */
+.detail-head{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:14px}
+.detail-head h2{font-size:24px;color:var(--navy)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.section{margin-bottom:18px}
+.section>h2{font-size:16px;color:var(--navy);margin:0 0 8px}
+.empty{color:var(--muted);font-style:italic;padding:8px 0}
+.chart svg{width:100%;height:auto;display:block}
+.var-up{color:var(--red);font-weight:600} .var-down{color:#1f7a2b;font-weight:600}
+
+/* ---------- Tooltip / toast ---------- */
+#tooltip{position:fixed;z-index:1000;pointer-events:none;background:var(--ink);color:#fff;padding:8px 10px;border-radius:8px;font-size:12px;box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:280px}
+#tooltip b{color:var(--green)}
+#tooltip .row{display:flex;justify-content:space-between;gap:14px}
+#toast{position:fixed;right:16px;bottom:16px;z-index:1100;display:flex;flex-direction:column;gap:8px}
+.toast{background:var(--ink);color:#fff;padding:10px 14px;border-radius:8px;border-left:5px solid var(--green);box-shadow:0 6px 18px rgba(0,0,0,.25);max-width:380px}
+.toast.error{border-left-color:var(--red)}
+
+/* ---------- Modale ---------- */
+.modal-back{position:fixed;inset:0;background:rgba(11,42,91,.45);z-index:500;display:flex;align-items:flex-start;justify-content:center;padding:28px 12px;overflow-y:auto}
+.modal{background:#fff;border-radius:14px;width:100%;max-width:760px;box-shadow:0 20px 50px rgba(0,0,0,.3);border:1px solid var(--ink)}
+.modal.wide{max-width:1240px}
+.modal-h{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:var(--navy);color:#fff;border-radius:13px 13px 0 0}
+.modal-h h2{font-size:17px}
+.modal-h .x{background:none;border:0;color:#fff;font-size:22px;cursor:pointer;line-height:1}
+.modal-b{padding:18px}
+.modal-f{display:flex;flex-wrap:wrap;gap:8px;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line);background:#FAFBFD;border-radius:0 0 14px 14px;position:sticky;bottom:0}
+.modal-f .spacer{flex:1}
+
+.dropzone{border:2px dashed var(--blue);border-radius:12px;padding:26px;text-align:center;background:#F5F9FF;transition:.15s}
+.dropzone.over{background:var(--green-bg);border-color:var(--ink)}
+.dropzone p{margin:6px 0;color:var(--muted)}
+.dropzone .big{font-size:16px;font-weight:700;color:var(--navy)}
+.files{margin-top:14px;display:grid;gap:10px}
+.file-row{border:1px solid var(--line);border-radius:10px;padding:12px;display:grid;grid-template-columns:1fr 260px;gap:12px;align-items:start}
+.file-row .name{font-weight:700;word-break:break-all}
+.file-row .info{font-size:12px;color:var(--muted);margin-top:4px}
+.file-row .info b{color:var(--ink);font-weight:600}
+.file-row select{width:100%;padding:8px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.file-row select.invalid{border:2px solid var(--red);background:var(--red-bg)}
+.applyall{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px;padding:10px;background:var(--green-bg);border-radius:10px}
+.applyall select{padding:7px;border:1px solid var(--line);border-radius:8px}
+.note{font-size:12px;color:var(--muted);background:#F5F7FA;border-left:4px solid var(--blue);padding:8px 10px;border-radius:6px;margin:10px 0}
+
+/* ---------- Anteprima / editor ---------- */
+.draft{border:1px solid var(--ink);border-radius:12px;margin-bottom:18px;overflow:hidden}
+.draft-h{background:#E8EEF7;padding:10px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.draft-h .t{font-weight:700;color:var(--navy)}
+.draft-b{padding:14px}
+.pv-choice{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--green-bg);border:1px solid var(--green);border-radius:10px;padding:10px 12px;margin-bottom:12px}
+.pv-choice select{padding:7px 10px;border:1px solid var(--ink);border-radius:8px;font-weight:700;min-width:220px}
+.pv-choice select.invalid{border:2px solid var(--red);background:var(--red-bg)}
+.fgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:12px}
+.fgroup{font-size:12px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:.4px;margin:12px 0 6px;border-bottom:1px solid var(--line);padding-bottom:3px}
+.fld{display:flex;flex-direction:column;gap:3px}
+.fld.wide{grid-column:span 2}
+.fld span{font-size:12px;color:var(--muted);font-weight:600}
+.fld input,.fld select,.fld textarea{padding:7px 9px;border:1px solid var(--line);border-radius:7px;background:#fff;width:100%}
+input.missing,select.missing{background:var(--yellow-bg)!important;border:2px solid var(--yellow)!important}
+input.missing-soft{background:#FFFBEA}
+.ltable td{padding:4px 5px}
+.ltable input,.ltable select{width:100%;padding:5px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:13px}
+.ltable input.n{text-align:right}
+.ltable .pack{font-size:11px;color:var(--muted);margin-top:2px}
+.checks{margin-top:12px;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:#FBFCFE}
+.checks h3{font-size:13px;margin-bottom:6px;color:var(--navy)}
+.chk{display:flex;gap:8px;padding:4px 0;font-size:13px;align-items:flex-start}
+.chk .ic{width:20px;flex:none;text-align:center;font-weight:700}
+.chk.ok .ic{color:#1f7a2b} .chk.warn .ic{color:#B07D00} .chk.err .ic{color:var(--red)} .chk.info .ic{color:var(--blue)}
+.chk.err{color:var(--red)}
+.chk .sub{color:var(--muted);font-size:12px}
+
+/* ---------- Impostazioni ---------- */
+fieldset{border:1px solid var(--line);border-radius:10px;padding:12px 14px;margin:0 0 14px}
+legend{font-weight:700;color:var(--navy);padding:0 6px}
+.set-row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:6px 0}
+.set-row input[type=number]{width:80px;padding:6px;border:1px solid var(--line);border-radius:7px}
+textarea{width:100%;min-height:62px;padding:8px;border:1px solid var(--line);border-radius:8px;resize:vertical}
+
+/* ---------- Responsive ---------- */
+@media (max-width:900px){ .grid2{grid-template-columns:1fr} .file-row{grid-template-columns:1fr} }
+@media (max-width:760px){
+  main{padding:12px}
+  .fld.wide{grid-column:auto}
+  table.cards thead{display:none}
+  table.cards tr{display:block;border-bottom:1px solid var(--line);padding:6px 0}
+  table.cards td{display:flex;justify-content:space-between;gap:12px;border:0;padding:4px 12px}
+  table.cards td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:600}
+  table.cards td.num{text-align:right}
+}
+</style>
+</head>
+<body>
+<header class="app">
+  <div class="inner">
+    <div>
+      <h1>Ordini materiale d'ufficio e consumo</h1>
+      <div class="sub">Monitoraggio per punto vendita · conferme d'ordine Lyreco · versione dimostrativa con dati fittizi</div>
+    </div>
+    <div class="toolbar">
+      <button class="btn primary big" data-action="add-order">+ Aggiungi ordine</button>
+      <button class="btn ghost" data-action="export-json">Esporta backup (JSON)</button>
+      <button class="btn ghost" data-action="import-json">Importa backup</button>
+      <button class="btn ghost" data-action="export-csv">Esporta ordini in CSV</button>
+      <button class="btn ghost" data-action="load-demo">Carica dati demo</button>
+      <button class="btn ghost" data-action="clear-all">Svuota archivio</button>
+      <button class="btn ghost" data-action="settings">⚙ Impostazioni</button>
+    </div>
+  </div>
+</header>
+<main id="app"></main>
+<div id="modal-root"></div>
+<div id="tooltip" hidden></div>
+<div id="toast"></div>
+<input type="file" id="import-input" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* =====================================================================
+   COSTANTI E PARAMETRI
+   ===================================================================== */
+const PV_LIST = ['Galleria Colli','Galleria Mare','Magazzino','Negozio Centro','Negozio Nord','Negozio Sud','Outlet Est','Outlet Ovest',
+  'Punto Vendita Nuovo','Retail Park Alfa','Retail Park Beta','Stazione','Uffici Sede'];
+
+const CATEGORIES = ['Pulizia','Carta e igiene','Cancelleria','Toner e stampa','Altro'];
+// Ordine di valutazione delle parole chiave (la prima categoria che corrisponde vince; altrimenti "Altro")
+const CAT_EVAL_ORDER = ['Toner e stampa','Pulizia','Cancelleria','Carta e igiene'];
+const CAT_COLORS = {'Pulizia':'#1E5AA8','Carta e igiene':'#8FD694','Cancelleria':'#0B2A5B','Toner e stampa':'#6C9BD8','Altro':'#A9B2BF'};
+
+const DEFAULT_SETTINGS = {
+  greenMax: 30,
+  yellowMax: 60,
+  keywords: {
+    'Toner e stampa': ['toner','cartuccia','cartucce','inchiostro','drum','tamburo','fotoconduttore','ribbon','testina','nastro per stampante','vaschetta recupero','kit manutenzione','stampante','stampanti'],
+    'Pulizia': ['detergente','detersivo','sgrassatore','degreaser','disinfettante','igienizzante','sanificante','candeggina','varechina','ammoniaca','anticalcare','lavapavimenti','lavavetri','vetri','pulitore','cleaner','sapone','scopa','scopino','paletta','mocio','frangia','secchio','spugna','panno','panni','microfibra','guanti','sacchi','sacco','sacchetti','pattumiera','deodorante','profumatore','alcool','alcol','cera','spazzolone','tergivetro','strofinaccio','pulizia','spray'],
+    'Cancelleria': ['penna','penne','matita','matite','evidenziatore','evidenziatori','pennarello','pennarelli','marcatore','gomma','correttore','cucitrice','punti metallici','graffette','fermagli','raccoglitore','raccoglitori','cartellina','cartelline','faldone','busta','buste','quaderno','blocco','blocchi','block notes','post-it','foglietti','nastro adesivo','scotch','forbici','colla','taglierino','etichette','calcolatrice','timbro','elastici','perforatore','righello','agenda','portadocumenti','archivio','divisori','cucitrice','spillatrice','temperamatite','lavagna'],
+    'Carta e igiene': ['carta igienica','igienica','asciugamani','asciugamano','asciugatutto','asciugatura','rotolo','rotoli','bobina','bobine','tovaglioli','fazzoletti','veline','salviette','carta mani','dispenser','risma','risme','fotocopie','carta a4','carta a3','carta copia','carta per stampa','lenzuolino','carta'],
+    'Altro': []
+  }
+};
+const LS_KEY = 'ordini_ufficio_demo_v1';
+const MESI = ['gen','feb','mar','apr','mag','giu','lug','ago','set','ott','nov','dic'];
+const MESI_LUNGHI = ['gennaio','febbraio','marzo','aprile','maggio','giugno','luglio','agosto','settembre','ottobre','novembre','dicembre'];
+
+/* =====================================================================
+   UTILITÀ: formati italiani, date, escape
+   ===================================================================== */
+const $ = (s, r = document) => r.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad = n => String(n).padStart(2, '0');
+const r2 = n => Math.round((n + Number.EPSILON) * 100) / 100;
+const uid = () => 'o' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const isNum = n => typeof n === 'number' && isFinite(n);
+
+/** Numero → "1.234,56" (separatore migliaia sempre presente) */
+function fmtNum(n, dec = 2) {
+  if (!isNum(n)) return '';
+  const neg = n < 0;
+  const [i, d] = Math.abs(n).toFixed(dec).split('.');
+  return (neg ? '-' : '') + i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (d ? ',' + d : '');
+}
+const fmtEur = n => isNum(n) ? '€ ' + fmtNum(n) : '—';
+/** Prezzo unitario: 2 decimali, fino a 4 se presenti */
+function fmtUnit(n) {
+  if (!isNum(n)) return '';
+  const s = n.toFixed(4).replace(/0{1,2}$/, '');
+  return fmtNum(n, s.split('.')[1].length);
+}
+const fmtPct = n => isNum(n) ? fmtNum(n * 100, 1) + ' %' : '—';
+
+/** "1.234,56" / "13,14" / "13.14" → numero (null se non interpretabile) */
+function itNum(s) {
+  if (s == null) return null;
+  if (typeof s === 'number') return isFinite(s) ? s : null;
+  let t = String(s).replace(/EUR|€|\s/gi, '');
+  if (!t) return null;
+  if (t.includes(',')) t = t.replace(/\./g, '').replace(',', '.');
+  else if (/^-?\d{1,3}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+  if (!/^-?\d+(\.\d+)?$/.test(t)) return null;
+  const n = Number(t);
+  return isFinite(n) ? n : null;
+}
+/** "gg/mm/aaaa" → "aaaa-mm-gg" (null se non valida) */
+function parseItDate(s) {
+  const m = String(s || '').trim().match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2}|\d{4})$/);
+  if (!m) return null;
+  let d = +m[1], mo = +m[2], y = +m[3];
+  if (y < 100) y += 2000;
+  const dt = new Date(Date.UTC(y, mo - 1, d));
+  if (dt.getUTCFullYear() !== y || dt.getUTCMonth() !== mo - 1 || dt.getUTCDate() !== d) return null;
+  return `${y}-${pad(mo)}-${pad(d)}`;
+}
+const fmtDate = iso => { if (!iso) return '—'; const [y, m, d] = iso.split('-'); return `${d}/${m}/${y}`; };
+const dayNum = iso => { const [y, m, d] = iso.split('-').map(Number); return Date.UTC(y, m - 1, d) / 864e5; };
+const todayIso = () => { const t = new Date(); return `${t.getFullYear()}-${pad(t.getMonth() + 1)}-${pad(t.getDate())}`; };
+const daysSince = iso => Math.round(dayNum(todayIso()) - dayNum(iso));
+const addDays = (iso, n) => new Date((dayNum(iso) + n) * 864e5).toISOString().slice(0, 10);
+const normText = s => String(s || '').replace(/[‘’´`]/g, "'").replace(/[   ]/g, ' ');
+const plain = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+function toast(msg, type = '') {
+  const el = document.createElement('div');
+  el.className = 'toast ' + type; el.textContent = msg;
+  $('#toast').appendChild(el);
+  setTimeout(() => el.remove(), type === 'error' ? 7000 : 3500);
+}
+function download(content, name, mime) {
+  const blob = new Blob([content], { type: mime });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =====================================================================
+   PERSISTENZA (localStorage)
+   ===================================================================== */
+/* =====================================================================
+   DATI DIMOSTRATIVI (tutti fittizi)
+   Generati in modo deterministico: nessun dato reale, nessun PDF reale.
+   Le date sono relative a oggi, così i semafori mostrano tutti gli stati.
+   ===================================================================== */
+const DEMO_CATALOG = [
+  {ref:'100001', desc:'Detergente multiuso superfici 1 L', pack:'Flacone', category:'Pulizia', price:3.20},
+  {ref:'100002', desc:'Detergente lavapavimenti 5 L', pack:'Tanica', category:'Pulizia', price:11.90},
+  {ref:'100003', desc:'Sgrassatore spray 750 ml', pack:'Flacone', category:'Pulizia', price:4.10},
+  {ref:'100004', desc:'Sacchi spazzatura 70x110 cm (conf. 20)', pack:'Confezione', category:'Pulizia', price:5.60},
+  {ref:'100005', desc:'Panno in microfibra (conf. 5)', pack:'Confezione', category:'Pulizia', price:6.80},
+  {ref:'100006', desc:'Guanti in nitrile taglia M (conf. 100)', pack:'Scatola', category:'Pulizia', price:7.45},
+  {ref:'200001', desc:'Carta igienica 2 veli (conf. 10 rotoli)', pack:'Confezione', category:'Carta e igiene', price:6.30},
+  {ref:'200002', desc:'Asciugamani a Z 2 veli (conf. 20)', pack:'Cartone', category:'Carta e igiene', price:14.20},
+  {ref:'200003', desc:'Rotolo asciugatutto (conf. 6)', pack:'Confezione', category:'Carta e igiene', price:8.90},
+  {ref:'200004', desc:'Carta per fotocopie A4 80 g (risma 500 fogli)', pack:'Risma', category:'Carta e igiene', price:3.85},
+  {ref:'300001', desc:'Penna a sfera blu (conf. 50)', pack:'Scatola', category:'Cancelleria', price:9.70},
+  {ref:'300002', desc:'Evidenziatori assortiti (conf. 10)', pack:'Confezione', category:'Cancelleria', price:7.20},
+  {ref:'300003', desc:'Cartellina con elastico (conf. 25)', pack:'Confezione', category:'Cancelleria', price:12.40},
+  {ref:'300004', desc:'Nastro adesivo trasparente (conf. 8)', pack:'Confezione', category:'Cancelleria', price:5.15},
+  {ref:'300005', desc:'Post-it 76x76 mm (conf. 12 blocchi)', pack:'Confezione', category:'Cancelleria', price:10.60},
+  {ref:'400001', desc:'Toner nero compatibile per stampante laser', pack:'Unità', category:'Toner e stampa', price:42.50},
+  {ref:'400002', desc:'Cartuccia inchiostro colore', pack:'Unità', category:'Toner e stampa', price:24.90},
+  {ref:'400003', desc:'Rotolo termico per registratore di cassa 57 mm (conf. 10)', pack:'Confezione', category:'Toner e stampa', price:6.95},
+  {ref:'500001', desc:'Batterie stilo AA (conf. 24)', pack:'Confezione', category:'Altro', price:13.80},
+  {ref:'500002', desc:'Lampadina LED E27 10 W', pack:'Unità', category:'Altro', price:3.90}
+];
+// [punto vendita, giorni dall'ultimo ordine, intervallo medio tra ordini (gg), n. ordini]  (null = mai ordinato)
+const DEMO_PLAN = [
+  ['Negozio Centro', 6, 24, 9], ['Negozio Nord', 14, 30, 7], ['Negozio Sud', 22, 28, 8],
+  ['Outlet Est', 41, 35, 6], ['Outlet Ovest', 55, 40, 5], ['Galleria Mare', 78, 45, 4],
+  ['Galleria Colli', 12, 21, 10], ['Retail Park Alfa', 95, 50, 3], ['Retail Park Beta', 33, 32, 6],
+  ['Stazione', 9, 18, 11], ['Uffici Sede', 19, 26, 8], ['Magazzino', null, 0, 0], ['Punto Vendita Nuovo', null, 0, 0]
+];
+function demoDB() {
+  let seed = 20260101;
+  const rnd = () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const pickInt = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+  const today = todayIso(), orders = []; let counter = 0;
+  DEMO_PLAN.forEach(([pv, lastAgo, interval, n]) => {
+    if (lastAgo == null) return;
+    for (let i = 0; i < n; i++) {
+      const ago = lastAgo + Math.round(interval * (n - 1 - i) * (0.85 + rnd() * 0.3));
+      const orderDate = addDays(today, -ago);
+      const pool = DEMO_CATALOG.slice().sort(() => rnd() - 0.5).slice(0, pickInt(2, 6));
+      const shipDate = ago >= 3 ? addDays(orderDate, 2) : '';
+      const lines = pool.map(p => {
+        const q = pickInt(1, p.price > 20 ? 4 : 12);
+        return { ref: p.ref, desc: p.desc, pack: p.pack, category: p.category, unitPrice: p.price, qtyOrdered: q,
+          qtyShipped: shipDate ? q : 0, shipDate, lineTotal: r2(p.price * q) };
+      });
+      const net = r2(lines.reduce((s, l) => s + l.lineTotal, 0)), vat = r2(net * 0.22);
+      counter++;
+      orders.push({ id: 'demo' + counter, pv, orderNumber: String(7000000 + counter * 37), status: shipDate ? 'Spedito' : 'In lavorazione',
+        orderDate, docDate: orderDate, billingName: 'Azienda Esempio S.r.l.', billingCode: '1000001',
+        shipCode: String(2000000 + DEMO_PLAN.findIndex(p => p[0] === pv)), shipName: 'Azienda Esempio S.r.l. - ' + pv,
+        shipContact: 'Mario Rossi', shipAddress: 'Via Esempio 1, 00100 Città Demo (XX)', notes: '', creator: 'Utente Demo',
+        net, vat, gross: r2(net + vat), lines, fileName: 'ordine_demo_' + counter + '.pdf',
+        importedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    }
+  });
+  return { version: 1, orders, settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) };
+}
+
+let DB = loadDB();
+
+function defaultDB() { return { version: 1, orders: [], settings: JSON.parse(JSON.stringify(DEFAULT_SETTINGS)) }; }
+function normalizeSettings(s) {
+  const d = JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
+  if (!s || typeof s !== 'object') return d;
+  if (Number.isInteger(s.greenMax) && s.greenMax >= 0) d.greenMax = s.greenMax;
+  if (Number.isInteger(s.yellowMax) && s.yellowMax > d.greenMax) d.yellowMax = s.yellowMax;
+  if (s.keywords) CATEGORIES.forEach(c => { if (Array.isArray(s.keywords[c])) d.keywords[c] = s.keywords[c].map(String); });
+  return d;
+}
+function loadDB() {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return demoDB();
+    const d = JSON.parse(raw);
+    return { version: 1, orders: Array.isArray(d.orders) ? d.orders.filter(validStoredOrder) : [], settings: normalizeSettings(d.settings) };
+  } catch (e) {
+    setTimeout(() => toast('Impossibile leggere i dati salvati (' + e.message + '). Si parte da un archivio vuoto: se hai un backup, importalo.', 'error'), 300);
+    return defaultDB();
+  }
+}
+function saveDB() {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(DB));
+    return true;
+  } catch (e) {
+    toast('ATTENZIONE: salvataggio nel browser non riuscito (' + e.message + '). Esporta subito un backup JSON per non perdere i dati.', 'error');
+    return false;
+  }
+}
+function validStoredOrder(o) {
+  return o && typeof o === 'object' && PV_LIST.includes(o.pv) && o.orderNumber && /^\d{4}-\d{2}-\d{2}$/.test(o.orderDate || '')
+    && isNum(o.net) && isNum(o.vat) && isNum(o.gross) && Array.isArray(o.lines);
+}
+
+/* =====================================================================
+   CATEGORIE PER PAROLE CHIAVE
+   ===================================================================== */
+function categorize(desc) {
+  const t = ' ' + plain(desc) + ' ';
+  for (const cat of CAT_EVAL_ORDER) {
+    for (const kw of (DB.settings.keywords[cat] || [])) {
+      const k = plain(kw).trim();
+      if (!k) continue;
+      const re = new RegExp('(^|[^a-z0-9])' + k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'));
+      if (re.test(t)) return cat;
+    }
+  }
+  return 'Altro';
+}
+
+/* =====================================================================
+   ESTRAZIONE TESTO
+   PDF.js restituisce frammenti di testo con coordinate: li ricompongo in
+   righe (stessa y) e, all'interno di ogni riga, in "celle" (frammenti
+   separati da un ampio spazio orizzontale). Le celle mantengono la x,
+   indispensabile perché i blocchi ordine/fatturazione/spedizione Lyreco
+   sono affiancati su tre colonne.
+   ===================================================================== */
+if (window.pdfjsLib) pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+async function extractPdfLines(file) {
+  const data = new Uint8Array(await file.arrayBuffer());
+  const pdf = await pdfjsLib.getDocument({ data }).promise;
+  const out = [];
+  for (let p = 1; p <= pdf.numPages; p++) {
+    const page = await pdf.getPage(p);
+    const tc = await page.getTextContent();
+    const items = tc.items.filter(it => it.str && it.str.trim() !== '').map(it => ({
+      str: normText(it.str), x: it.transform[4], y: it.transform[5], w: it.width || 0,
+      h: Math.abs(it.transform[3]) || Math.abs(it.height) || 8
+    }));
+    items.sort((a, b) => (b.y - a.y) || (a.x - b.x));
+    const rows = [];
+    for (const it of items) {
+      const row = rows.find(r => Math.abs(r.y - it.y) <= Math.max(2, Math.min(r.h, it.h) * 0.45));
+      if (row) row.items.push(it); else rows.push({ y: it.y, h: it.h, items: [it] });
+    }
+    rows.sort((a, b) => b.y - a.y);
+    for (const r of rows) {
+      r.items.sort((a, b) => a.x - b.x);
+      const cells = []; let cur = null, prevEnd = null;
+      for (const it of r.items) {
+        const gap = prevEnd == null ? 0 : it.x - prevEnd;
+        if (!cur || gap > Math.max(10, it.h * 1.5)) { cur = { text: it.str, x: it.x }; cells.push(cur); }
+        else cur.text += (gap > it.h * 0.12 ? ' ' : '') + it.str;
+        prevEnd = it.x + it.w;
+      }
+      cells.forEach(c => c.text = c.text.replace(/\s+/g, ' ').trim());
+      out.push({ page: p, y: r.y, cells, text: cells.map(c => c.text).join('   ') });
+    }
+  }
+  return out;
+}
+/** File .txt: ogni riga di testo è una riga; 3+ spazi o tab separano le celle */
+function textToLines(txt) {
+  return normText(txt).replace(/\t/g, '    ').split(/\r?\n/).map(s => {
+    const cells = []; const re = /\S+(?: {1,2}\S+)*/g; let m;
+    while ((m = re.exec(s))) cells.push({ text: m[0], x: m.index * 6 });
+    return { page: 1, y: 0, cells, text: cells.map(c => c.text).join('   ') };
+  }).filter(l => l.cells.length);
+}
+
+/* =====================================================================
+   PARSING FORMATO LYRECO
+   ===================================================================== */
+const AMT = '(?:\\d{1,3}(?:\\.\\d{3})+|\\d+),\\d{2,4}';
+const REF_RE = /\bRef(?:erenza)?\.?\s*:?\s*(\d[\d.\-\/]*\d)/i;
+const TITLE_RE = /Informazioni\s+sull/i;
+const HEADER_RE = /prezzo\s+unitario|quantit[àa]\s+(?:ordinata|rimanente|spedita)|data\s+di\s+spedizione/i;
+const HEADER_WORDS = new Set(['prodotto','prodotti','descrizione','articolo','codice','ref','prezzo','unitario','quantità','quantita','qtà','qta',
+  'ordinata','ordinato','rimanente','spedita','spedito','data','di','spedizione','importo','totale','riga','eur','(eur)','€','um','u.m.',
+  'dettagli','note','sulla','consegna','n.','numero','bolla','ddt']);
+const SKIP_RE = /Numero\s+d'?\s*ordine|\bStat[oi]\s*:|Data\s+(?:del\s+)?documento|Data\s+dell'?\s*ordine|Conferma\s+d'?\s*ordine|Informazioni\s+sull|Lyreco\s+Italia|Pagina\s*\d|\bPag\.\s*\d|Capitale\s+sociale|www\.|@|hai\s+domande|servizio\s+clienti|tramite\s+(?:e-?mail|telefono)|I\s+prezzi\s+sono|^\s*\d+\s*\/\s*\d+\s*$|^\s*\d+\s+di\s+\d+\s*$/i;
+const PACK_RE = /^(?:cartone|unit[àa]|confezione|conf\.?|scatola|pacco|pz\.?|pezz[oi]|risma|rotolo|flacone|tanica|kit|set|blister|busta|bobina|fusto|paio|coppia)\s*(?:\(\s*\d+\s*\))?$/i;
+const COMPANY_RE = /\b(?:S\.?\s?R\.?\s?L\.?\s?S?|S\.?\s?P\.?\s?A\.?|S\.?\s?N\.?\s?C\.?|S\.?\s?A\.?\s?S\.?|SOCIET[AÀ'])(?![a-z])/i;
+
+function isHeaderLine(t) {
+  if (/\d/.test(t)) return false;
+  if (HEADER_RE.test(t)) return true;
+  const w = t.toLowerCase().split(/\s+/).map(x => x.replace(/:$/, '')).filter(Boolean);
+  return w.length > 0 && w.every(x => HEADER_WORDS.has(x));
+}
+
+/** Righe del blocco sotto un titolo "Informazioni sulla ...", limitate alla sua colonna */
+function getBlock(L, re) {
+  for (let i = 0; i < L.length; i++) {
+    const line = L[i];
+    const ci = line.cells.findIndex(c => re.test(c.text));
+    if (ci < 0) continue;
+    const t = line.cells[ci];
+    const others = line.cells.filter((c, j) => j !== ci && TITLE_RE.test(c.text));
+    const left = t.x - 25; // il contenuto di un blocco è allineato sotto il suo titolo
+    const rightX = others.filter(c => c.x > t.x).map(c => c.x);
+    const right = rightX.length ? Math.min(...rightX) - 5 : Infinity;
+    const out = [];
+    for (let k = i + 1, seen = 0; k < L.length && out.length < 14 && seen < 30; k++, seen++) {
+      const ln = L[k];
+      if (ln.page !== line.page) break;
+      const cs = ln.cells.filter(c => c.x >= left && c.x < right);
+      if (!cs.length) continue;
+      const txt = cs.map(c => c.text).join('   ');
+      if (TITLE_RE.test(txt) || isHeaderLine(txt) || HEADER_RE.test(txt) || REF_RE.test(txt) || /Totale\s+netto/i.test(txt) || new RegExp(AMT + '\\s*(?:EUR|€)').test(txt)) break;
+      out.push(txt);
+    }
+    return out;
+  }
+  return null;
+}
+function findCompany(lines) {
+  for (const l of lines) { const m = l.match(/Ragione\s+sociale\s*:?\s*(.+)/i); if (m) return m[1].trim(); }
+  for (const l of lines) for (const seg of l.split(/\s{3,}/)) if (COMPANY_RE.test(seg) && !/:/.test(seg)) return seg.trim();
+  return '';
+}
+/** Indirizzo: riga che precede la riga "CAP Città PROV" + la riga CAP stessa */
+function findAddress(lines) {
+  for (const l of lines) { const m = l.match(/Indirizzo(?:\s+di\s+consegna)?\s*:\s*(.+)/i); if (m) return m[1].trim(); }
+  const capIdx = lines.findIndex(l => /^\d{5}\s+\S/.test(l.trim()));
+  if (capIdx > 0 && !/:/.test(lines[capIdx - 1])) return lines[capIdx - 1].trim() + ', ' + lines[capIdx].trim();
+  const st = lines.find(l => /^(?:via|viale|v\.le|corso|c\.so|piazza|piazzale|p\.zza|p\.za|largo|strada|str\.|localit[àa]|loc\.|vicolo|contrada|frazione)\b/i.test(l.trim()));
+  return st ? st.trim() : '';
+}
+
+/** Scompone una riga in token: importi, date, interi (con posizione) */
+function tokenize(t, requireCur) {
+  const re = new RegExp('(' + AMT + ')(\\s*(?:EUR|€))?|(\\d{1,2}[\\/.\\-]\\d{1,2}[\\/.\\-]\\d{4})|(\\d+)', 'gi');
+  const toks = []; let m;
+  while ((m = re.exec(t))) {
+    if (m[1]) {
+      const cur = !!m[2] || /€\s*$/.test(t.slice(Math.max(0, m.index - 3), m.index));
+      toks.push({ t: (requireCur && !cur) ? 'num' : 'amt', v: itNum(m[1]), i: m.index });
+    } else if (m[3]) {
+      const iso = parseItDate(m[3]);
+      toks.push(iso ? { t: 'date', v: iso, i: m.index } : { t: 'num', i: m.index });
+    } else toks.push({ t: 'int', v: +m[4], raw: m[4], len: m[4].length, i: m.index });
+  }
+  return toks;
+}
+/** Classifica una riga della tabella prodotti: testo (descrizione) o dati numerici */
+function classifyLine(t, requireCur) {
+  const toks = tokenize(t, requireCur);
+  const firstAmt = toks.find(x => x.t === 'amt');
+  if (firstAmt) return { desc: t.slice(0, firstAmt.i).trim(), tokens: toks.filter(x => x.i >= firstAmt.i && x.t !== 'num') };
+  const letters = /[A-Za-zÀ-ÿ]{2,}/.test(t.replace(/EUR|€/gi, ''));
+  const useful = toks.filter(x => x.t !== 'num');
+  if (!letters && useful.length) return { desc: '', tokens: useful };
+  if (useful.some(x => x.t === 'date')) return { desc: '', tokens: useful }; // es. "Spedito il 13/10/2026 q.tà 2"
+  return { desc: t.trim(), tokens: [] };
+}
+/** Interpreta i token di un prodotto secondo l'ordine delle colonne Lyreco */
+function interpretItem(toks) {
+  const used = new Set(), ships = [];
+  // spedizioni: [n. bolla] data quantità
+  toks.forEach((tk, k) => {
+    if (tk.t !== 'date') return;
+    let qty = null, doc = '';
+    const nx = toks[k + 1], pv = toks[k - 1];
+    if (nx && nx.t === 'int' && nx.len < 6 && !used.has(k + 1)) { qty = nx.v; used.add(k + 1); }
+    if (pv && pv.t === 'int' && pv.len >= 6 && !used.has(k - 1)) { doc = pv.raw; used.add(k - 1); }
+    ships.push({ date: tk.v, qty, doc }); used.add(k);
+  });
+  const amts = [], ints = [];
+  toks.forEach((tk, k) => { if (used.has(k)) return; if (tk.t === 'amt') amts.push(tk.v); else if (tk.t === 'int' && tk.len < 6) ints.push(tk.v); });
+  const unit = amts.length ? amts[0] : null;
+  const total = amts.length >= 2 ? amts[1] : null;
+  let qo = ints.length ? ints[0] : null;
+  const qr = ints.length > 1 ? ints[1] : null;
+  let coherent = true;
+  if (unit != null && total != null) {
+    const ok = q => q != null && Math.abs(unit * q - total) <= 0.011 + Math.abs(total) * 0.0005;
+    if (!ok(qo)) { const c = ints.find(ok); if (c != null) qo = c; else coherent = false; }
+  }
+  return { unitPrice: unit, lineTotal: total, qtyOrdered: qo, qtyRemaining: qr, ships, coherent, extraAmts: Math.max(0, amts.length - 2) };
+}
+
+/** Parser principale: righe di testo → dati ordine */
+function parseLyreco(lines) {
+  const L = lines.map(l => ({ ...l, text: normText(l.text), cells: l.cells.map(c => ({ ...c, text: normText(c.text) })) }));
+  const full = L.map(l => l.text).join('\n');
+  const res = { orderNumber: '', status: '', orderDate: '', docDate: '', billingName: '', billingCode: '', shipCode: '', shipName: '',
+    shipContact: '', shipAddress: '', notes: '', creator: '', net: null, vat: null, gross: null, lines: [], warnings: [] };
+  let m;
+  if (full.trim().length < 40) res.warnings.push('Il file non contiene testo estraibile (forse è un PDF scansionato): inserisci i dati a mano.');
+  else if (!/lyreco/i.test(full)) res.warnings.push('Il documento non sembra una conferma d\'ordine Lyreco: controlla con attenzione i dati estratti.');
+
+  // --- Intestazione e informazioni sull'ordine ---
+  if ((m = full.match(/Numero\s+d'?\s*ordine\s*:?\s*(\d{5,})/i))) res.orderNumber = m[1];
+  if ((m = full.match(/\bStat[oi]\s*:\s*([A-Za-zÀ-ÿ][A-Za-zÀ-ÿ' ]*?)\s*(?= {2,}|\n|$)/i))) res.status = m[1].trim();
+  if ((m = full.match(/Data\s+dell'?\s*ordine\s*:?\s*(\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4})/i))) res.orderDate = parseItDate(m[1]) || '';
+  if ((m = full.match(/^\s*(\d{2}\/\d{2}\/\d{4})\s*$/m))) res.docDate = parseItDate(m[1]) || '';
+  const ordBlock = getBlock(L, /Informazioni\s+sull'?\s*ordine/i) || [];
+  const ci = ordBlock.findIndex(l => /^Creatore\s*:/i.test(l));
+  if (ci >= 0) res.creator = (ordBlock[ci].replace(/^Creatore\s*:\s*/i, '') + ' ' + (ordBlock[ci + 1] || '') + ' ' + (ordBlock[ci + 2] || '')).replace(/\s+/g, ' ').trim();
+
+  // --- Fatturazione (solo informativo) ---
+  const bill = getBlock(L, /Informazioni\s+sulla\s+fatturazione/i) || [];
+  if ((m = bill.join('\n').match(/Codice\s+cliente\s*:?\s*(\d+)/i))) res.billingCode = m[1];
+  res.billingName = findCompany(bill);
+
+  // --- Spedizione (solo informativo: il PV lo sceglie l'utente) ---
+  const ship = getBlock(L, /Informazioni\s+sulla\s+spedizione/i) || [];
+  const shipTxt = ship.join('\n');
+  if ((m = shipTxt.match(/Codice\s+cliente(?:\s+di\s+spedizione)?\s*:?\s*(\d+)/i)) || (m = full.match(/Codice\s+cliente\s+di\s+spedizione\s*:?\s*(\d+)/i))) res.shipCode = m[1];
+  if ((m = shipTxt.match(/(?:Referente|All'attenzione\s+di)\s*:?\s*([^\n]+)/i))) res.shipContact = m[1].replace(/\s{3,}.*/, '').trim();
+  res.shipAddress = findAddress(ship);
+  const capIdx = ship.findIndex(l => /^\d{5}\s+\S/.test(l.trim()));
+  const nameLines = ship.slice(0, capIdx > 0 ? capIdx - 1 : ship.length).filter(l => !/:|All'attenzione/i.test(l));
+  res.shipName = nameLines.join(' · ');
+  const cons = getBlock(L, /Informazioni\s+sulla\s+consegna/i) || [];
+  if ((m = full.match(/Note\s+(?:di|per\s+la|alla|sulla)?\s*consegna\s*:\s*([^\n]+)/i))) res.notes = m[1].trim();
+  else if (cons.length) res.notes = cons.filter(l => !isHeaderLine(l)).join(' ').trim();
+
+  // --- Totali (ultima pagina) ---
+  const net = full.match(new RegExp('Totale\\s+netto\\s*:?\\s*(?:EUR|€)?\\s*(' + AMT + ')', 'i'));
+  if (net) {
+    res.net = itNum(net[1]);
+    const after = full.slice(net.index + net[0].length);
+    const vat = after.match(new RegExp('\\bIVA(?:\\s*\\(?\\s*\\d{1,2}(?:,\\d+)?\\s*%\\s*\\)?)?\\s*:?\\s*(?:EUR|€)?\\s*(' + AMT + ')'));
+    if (vat) {
+      res.vat = itNum(vat[1]);
+      const after2 = after.slice(vat.index + vat[0].length);
+      const gr = after2.match(new RegExp('\\b(?:TOTALE|Totale\\s+(?:lordo|ivato|IVA\\s+inclusa|complessivo|ordine))\\s*:?\\s*(?:EUR|€)?\\s*(' + AMT + ')'));
+      if (gr) res.gross = itNum(gr[1]);
+    }
+  } else {
+    // fallback: etichette e importi su righe separate → i tre importi dopo "Totale netto", accettati solo se coerenti
+    const idx = full.search(/Totale\s+netto/i);
+    if (idx >= 0) {
+      const a = [...full.slice(idx).matchAll(new RegExp(AMT, 'g'))].slice(0, 3).map(x => itNum(x[0]));
+      if (a.length === 3 && Math.abs(a[0] + a[1] - a[2]) <= 0.01) [res.net, res.vat, res.gross] = a;
+    }
+  }
+
+  // --- Righe prodotto ---
+  const firstRef = L.findIndex(l => REF_RE.test(l.text));
+  if (firstRef < 0) { res.warnings.push('Nessuna riga prodotto (Ref) trovata nel documento.'); return res; }
+  let start = -1;
+  for (let k = firstRef - 1; k >= Math.max(0, firstRef - 12); k--) if (isHeaderLine(L[k].text)) { start = k + 1; break; }
+  if (start < 0) start = Math.max(0, firstRef - 3);
+  let end = L.findIndex((l, k) => k > firstRef && /Totale\s+netto/i.test(l.text));
+  if (end < 0) end = L.length;
+  const requireCur = (full.match(new RegExp(AMT + '\\s*(?:EUR|€)', 'g')) || []).length >= 3;
+
+  const items = []; let cur = null, lastPage = L[start] ? L[start].page : 1;
+  const newItem = () => ({ desc: [], ref: '', pack: '', tokens: [] });
+  const push = () => { if (cur && (cur.ref || cur.tokens.length)) items.push(cur); };
+  for (let k = start; k < end; k++) {
+    const ln = L[k];
+    if (ln.page !== lastPage) {
+      // nuova pagina: salto l'intestazione ripetuta (data documento + testata tabella)
+      lastPage = ln.page;
+      let h = -1;
+      for (let j = k; j < Math.min(end, k + 8) && L[j].page === ln.page; j++) if (isHeaderLine(L[j].text)) { h = j; break; }
+      if (h >= 0) { k = h; continue; }
+    }
+    let t = ln.text.trim();
+    if (!t || SKIP_RE.test(t) || isHeaderLine(t)) continue;
+    let ref = null;
+    const rm = t.match(REF_RE);
+    if (rm) {
+      ref = rm[1]; t = t.replace(rm[0], ' ').replace(/\s+/g, ' ').trim();
+      if (!cur) cur = newItem(); else if (cur.ref) { push(); cur = newItem(); }
+      cur.ref = ref;
+      if (t && PACK_RE.test(t)) { cur.pack = t; continue; }
+    }
+    if (!t) continue;
+    if (PACK_RE.test(t)) { if (cur) cur.pack = cur.pack || t; continue; }
+    const c = classifyLine(t, requireCur);
+    if (c.desc) {
+      if (!cur) cur = newItem();
+      else if (cur.ref && cur.tokens.length && !ref) { push(); cur = newItem(); }
+      cur.desc.push(c.desc);
+    }
+    if (c.tokens.length) { if (!cur) cur = newItem(); cur.tokens.push(...c.tokens); }
+  }
+  push();
+
+  res.lines = items.map((it, n) => {
+    const r = interpretItem(it.tokens);
+    const desc = it.desc.join(' ').replace(/\s+/g, ' ').trim();
+    if (!r.coherent) res.warnings.push(`Riga ${n + 1}: prezzo unitario × quantità non corrisponde all'importo riga, verifica.`);
+    if (r.extraAmts) res.warnings.push(`Riga ${n + 1}: trovati importi aggiuntivi non interpretati.`);
+    return { ref: it.ref, desc, pack: it.pack.replace(/\s+/g, ' '), category: categorize(desc), unitPrice: r.unitPrice, qtyOrdered: r.qtyOrdered,
+      lineTotal: r.lineTotal, ships: r.ships, qtyShipped: null, shipDate: '' };
+  });
+
+  // Spedizioni: Lyreco ripete gli stessi dettagli di spedizione sotto ogni riga con lo stesso Ref.
+  // Per evitare doppi conteggi: totale spedito del Ref = massimo tra le righe, poi ripartito in ordine.
+  const groups = {};
+  res.lines.forEach(l => (groups[l.ref || ('#' + l.desc)] ||= []).push(l));
+  let shared = false;
+  Object.values(groups).forEach(g => {
+    const sums = g.map(l => l.ships.some(s => s.qty != null) ? l.ships.reduce((s, x) => s + (x.qty || 0), 0) : null);
+    const dates = g.flatMap(l => l.ships.map(s => s.date)).sort();
+    const lastDate = dates.length ? dates[dates.length - 1] : '';
+    if (g.length === 1) { g[0].qtyShipped = sums[0]; g[0].shipDate = g[0].ships.length ? g[0].ships.map(s => s.date).sort().pop() : ''; return; }
+    const known = sums.filter(v => v != null);
+    let rem = known.length ? Math.max(...known) : null;
+    if (rem != null) shared = true;
+    g.forEach((l, i) => {
+      l.shipDate = l.ships.length ? lastDate : '';
+      if (rem == null) return;
+      const q = i === g.length - 1 ? rem : Math.min(rem, l.qtyOrdered ?? rem);
+      l.qtyShipped = q; rem -= q;
+    });
+  });
+  if (shared) res.warnings.push('Il PDF ripete i dettagli di spedizione per le righe con lo stesso Ref: le quantità spedite sono state ripartite tra queste righe (verifica).');
+  res.lines.forEach(l => delete l.ships);
+  return res;
+}
+
+/* =====================================================================
+   METRICHE
+   ===================================================================== */
+const sum3 = list => list.reduce((a, o) => ({ net: r2(a.net + o.net), vat: r2(a.vat + o.vat), gross: r2(a.gross + o.gross) }), { net: 0, vat: 0, gross: 0 });
+const vatRate = o => (o.net ? o.vat / o.net : null);
+/** Netto/IVA/lordo di una riga prodotto: IVA e lordo calcolati con l'aliquota dell'ordine */
+function line3(l, o) {
+  const rate = vatRate(o);
+  if (!isNum(l.lineTotal)) return { net: null, vat: null, gross: null };
+  const vat = rate == null ? null : r2(l.lineTotal * rate);
+  return { net: l.lineTotal, vat, gross: vat == null ? null : r2(l.lineTotal + vat) };
+}
+function statusFor(days) {
+  if (days == null) return 'red';
+  if (days <= DB.settings.greenMax) return 'green';
+  if (days <= DB.settings.yellowMax) return 'yellow';
+  return 'red';
+}
+const orderShipDate = o => (o.lines.map(l => l.shipDate).filter(Boolean).sort().pop() || '');
+
+function pvStats(pv) {
+  const os = DB.orders.filter(o => o.pv === pv).sort((a, b) => a.orderDate.localeCompare(b.orderDate) || a.orderNumber.localeCompare(b.orderNumber));
+  const n = os.length, tot = sum3(os);
+  const last = n ? os[n - 1].orderDate : null;
+  const days = last ? daysSince(last) : null;
+  const distinct = [...new Set(os.map(o => o.orderDate))];
+  const avgInt = distinct.length >= 2 ? (dayNum(distinct[distinct.length - 1]) - dayNum(distinct[0])) / (distinct.length - 1) : null;
+  return {
+    pv, orders: os, n, tot, last, days, avgInt,
+    avg: n ? { net: r2(tot.net / n), vat: r2(tot.vat / n), gross: r2(tot.gross / n) } : null,
+    next: avgInt != null ? addDays(last, Math.round(avgInt)) : null,
+    status: statusFor(days)
+  };
+}
+
+/* =====================================================================
+   COMPONENTI DI RENDERING COMUNI
+   ===================================================================== */
+const CALC = '<span class="calc" title="Valore calcolato applicando l\'aliquota IVA dell\'ordine (IVA ÷ Prezzo netto)">†</span>';
+const CALC_NOTE = '<div class="foot-note"><span class="calc">†</span> Valore calcolato: il PDF riporta solo il prezzo netto di riga; IVA e lordo sono ottenuti applicando l\'aliquota dell\'ordine (IVA ÷ Prezzo netto).</div>';
+function money3(t) {
+  if (!t) return '<div class="m3"><div><span class="lbl">Nessun dato</span></div></div>';
+  return `<div class="m3"><div><span class="lbl">Prezzo netto</span><span class="val">${fmtEur(t.net)}</span></div>
+    <div><span class="lbl">IVA</span><span class="val">${fmtEur(t.vat)}</span></div>
+    <div><span class="lbl">Prezzo lordo</span><span class="val strong">${fmtEur(t.gross)}</span></div></div>`;
+}
+const STATUS_LBL = { green: 'Regolare', yellow: 'Da monitorare', red: 'In ritardo' };
+function tip3(title, t, calc) {
+  const c = calc ? ' †' : '';
+  return esc(`<b>${esc(title)}</b><div class="row"><span>Prezzo netto</span><span>${fmtEur(t.net)}</span></div><div class="row"><span>IVA${c}</span><span>${fmtEur(t.vat)}</span></div><div class="row"><span>Prezzo lordo${c}</span><span>${fmtEur(t.gross)}</span></div>`
+    + (t.extra ? `<div class="row"><span>${esc(t.extra)}</span></div>` : ''));
+}
+
+/* =====================================================================
+   LANDING: elenco PV
+   ===================================================================== */
+function renderList() {
+  const stats = PV_LIST.map(pvStats);
+  const allTot = sum3(DB.orders);
+  const nAll = DB.orders.length;
+  const late = stats.filter(s => s.status === 'red').length;
+  const never = stats.filter(s => !s.n).length;
+  $('#app').innerHTML = `
+    <div class="kpis">
+      <div class="kpi"><div class="k-lbl">Ordini totali</div><div class="k-val">${nAll}</div><div class="k-sub">${PV_LIST.length - never} PV su ${PV_LIST.length} con almeno un ordine</div></div>
+      <div class="kpi"><div class="k-lbl">Spesa totale gruppo</div>${money3(allTot)}</div>
+      <div class="kpi"><div class="k-lbl">Spesa media per ordine</div>${money3(nAll ? { net: r2(allTot.net / nAll), vat: r2(allTot.vat / nAll), gross: r2(allTot.gross / nAll) } : null)}</div>
+      <div class="kpi accent"><div class="k-lbl">PV senza ordini recenti</div><div class="k-val">${late} <span style="font-size:14px;color:var(--muted)">/ ${PV_LIST.length}</span></div>
+        <div class="k-sub">ultimo ordine oltre ${DB.settings.yellowMax} giorni o mai ordinato (di cui ${never} senza ordini)</div></div>
+    </div>
+    <div class="list-head">
+      <input class="search" id="pv-search" type="search" placeholder="Cerca punto vendita…" aria-label="Cerca punto vendita">
+      <div class="legend">
+        <span><span class="dot green"></span> ≤ ${DB.settings.greenMax} gg</span>
+        <span><span class="dot yellow"></span> ${DB.settings.greenMax + 1}–${DB.settings.yellowMax} gg</span>
+        <span><span class="dot red"></span> &gt; ${DB.settings.yellowMax} gg o mai ordinato</span>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="cards">
+      <thead><tr><th>Stato</th><th>Punto vendita</th><th>Ultimo ordine</th><th class="num">Giorni dall'ultimo</th><th class="num">N. ordini</th>
+        <th class="num">Prezzo netto</th><th class="num">IVA</th><th class="num">Prezzo lordo</th></tr></thead>
+      <tbody id="pv-tbody"></tbody>
+    </table></div>
+    <div class="foot-note">Ordinamento: prima i PV senza ordini, poi dal PV che non ordina da più tempo a quello più recente. Clic sul nome per il dettaglio.</div>`;
+  $('#pv-search').addEventListener('input', () => renderPvRows(stats));
+  renderPvRows(stats);
+}
+function renderPvRows(stats) {
+  const q = plain($('#pv-search').value.trim());
+  const sorted = [...stats].sort((a, b) => {
+    if (!a.n && !b.n) return PV_LIST.indexOf(a.pv) - PV_LIST.indexOf(b.pv);
+    if (!a.n) return -1; if (!b.n) return 1;
+    return a.last.localeCompare(b.last) || PV_LIST.indexOf(a.pv) - PV_LIST.indexOf(b.pv);
+  }).filter(s => !q || plain(s.pv).includes(q));
+  $('#pv-tbody').innerHTML = sorted.map(s => `
+    <tr class="clickable" data-action="open-pv" data-pv="${esc(s.pv)}">
+      <td data-label="Stato"><span class="dot ${s.status}" title="${STATUS_LBL[s.status]}"></span></td>
+      <td data-label="Punto vendita"><button class="pvname" data-action="open-pv" data-pv="${esc(s.pv)}">${esc(s.pv)}</button></td>
+      <td data-label="Ultimo ordine">${s.n ? fmtDate(s.last) : '<span class="badge red">Nessun ordine</span>'}</td>
+      <td data-label="Giorni dall'ultimo" class="num">${s.n ? `<span class="badge ${s.status}">${Math.max(0, s.days)} gg</span>` : '—'}</td>
+      <td data-label="N. ordini" class="num">${s.n}</td>
+      <td data-label="Prezzo netto" class="num">${fmtEur(s.tot.net)}</td>
+      <td data-label="IVA" class="num">${fmtEur(s.tot.vat)}</td>
+      <td data-label="Prezzo lordo" class="num"><b>${fmtEur(s.tot.gross)}</b></td>
+    </tr>`).join('') || `<tr><td colspan="8" class="empty">Nessun punto vendita corrisponde alla ricerca.</td></tr>`;
+}
+
+/* =====================================================================
+   DETTAGLIO PV
+   ===================================================================== */
+const OPEN_ORDERS = new Set();
+let PROD_SORT = { key: 'net', dir: -1 };
+
+function renderDetail(pv) {
+  const s = pvStats(pv);
+  const os = s.orders;
+  // aggregazione per categoria e per prodotto (righe)
+  const cats = {}; const prods = {};
+  os.forEach(o => o.lines.forEach(l => {
+    const v = line3(l, o);
+    const c = cats[l.category || 'Altro'] ||= { net: 0, vat: 0, gross: 0, vatOk: true };
+    if (isNum(v.net)) { c.net = r2(c.net + v.net); if (isNum(v.vat)) { c.vat = r2(c.vat + v.vat); c.gross = r2(c.gross + v.gross); } else c.vatOk = false; }
+    const key = l.ref || ('desc:' + plain(l.desc));
+    const p = prods[key] ||= { ref: l.ref, desc: l.desc, category: l.category, qty: 0, orders: new Set(), hist: [], net: 0, vat: 0, gross: 0 };
+    p.desc = l.desc || p.desc; p.category = l.category || p.category;
+    if (isNum(l.qtyOrdered)) p.qty += l.qtyOrdered;
+    p.orders.add(o.id);
+    if (isNum(l.unitPrice)) p.hist.push({ d: o.orderDate, price: l.unitPrice });
+    if (isNum(v.net)) p.net = r2(p.net + v.net);
+    if (isNum(v.vat)) { p.vat = r2(p.vat + v.vat); p.gross = r2(p.gross + v.gross); }
+  }));
+  const prodList = Object.values(prods).map(p => {
+    p.hist.sort((a, b) => a.d.localeCompare(b.d));
+    p.nOrders = p.orders.size;
+    p.first = p.hist.length ? p.hist[0].price : null;
+    p.last = p.hist.length ? p.hist[p.hist.length - 1].price : null;
+    p.varPct = (p.first && p.last != null) ? (p.last - p.first) / p.first : null;
+    return p;
+  });
+
+  $('#app').innerHTML = `
+    <div class="detail-head">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <button class="btn" data-action="back">← Torna all'elenco</button>
+        <h2>${esc(pv)}</h2>
+        ${s.n ? `<span class="badge ${s.status}">${STATUS_LBL[s.status]}</span>` : '<span class="badge red">Nessun ordine</span>'}
+      </div>
+      <button class="btn primary" data-action="add-order">+ Aggiungi ordine</button>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="k-lbl">Numero ordini</div><div class="k-val">${s.n}</div><div class="k-sub">${s.n ? 'dal ' + fmtDate(os[0].orderDate) : 'nessun ordine registrato'}</div></div>
+      <div class="kpi"><div class="k-lbl">Spesa totale</div>${money3(s.tot)}</div>
+      <div class="kpi"><div class="k-lbl">Spesa media per ordine</div>${money3(s.avg)}</div>
+      <div class="kpi accent"><div class="k-lbl">Giorni dall'ultimo ordine</div><div class="k-val">${s.n ? Math.max(0, s.days) : '—'}</div><div class="k-sub">${s.n ? 'ultimo ordine ' + fmtDate(s.last) : 'mai ordinato'}</div></div>
+      <div class="kpi"><div class="k-lbl">Intervallo medio tra ordini</div><div class="k-val">${s.avgInt != null ? fmtNum(s.avgInt, 0) + ' gg' : '—'}</div><div class="k-sub">${s.avgInt != null ? 'calcolato su date d\'ordine distinte' : 'servono almeno 2 ordini in date diverse'}</div></div>
+      <div class="kpi"><div class="k-lbl">Prossimo ordine stimato</div><div class="k-val">${s.next ? fmtDate(s.next) : '—'}</div><div class="k-sub">${s.next ? 'ultimo ordine + intervallo medio' + (s.next < todayIso() ? ' · <b style="color:var(--red)">superata</b>' : '') : 'non stimabile'}</div></div>
+    </div>
+    <div class="grid2">
+      <div class="card chart"><h2>Spesa mensile (prezzo netto)</h2>${monthlyChart(os)}</div>
+      <div class="card chart"><h2>Spesa per categoria (prezzo netto)</h2>${categoryChart(cats)}</div>
+    </div>
+    <div class="section"><h2>Cosa compra</h2><div id="prod-table"></div>${prodList.length ? CALC_NOTE : ''}</div>
+    <div class="section"><h2>Storico ordini</h2>${historyTable(os)}</div>`;
+  renderProducts(prodList);
+}
+
+function renderProducts(list) {
+  const el = $('#prod-table');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<p class="empty">Nessun prodotto: registra un ordine per questo PV.</p>'; return; }
+  const k = PROD_SORT.key, d = PROD_SORT.dir;
+  const sorted = [...list].sort((a, b) => {
+    let va = a[k], vb = b[k];
+    if (va == null) return 1; if (vb == null) return -1;
+    if (typeof va === 'string') return d * va.localeCompare(vb, 'it');
+    return d * (va - vb);
+  });
+  const th = (key, lbl, num) => `<th class="sortable ${num ? 'num' : ''}" data-action="sort-prod" data-key="${key}">${lbl}${PROD_SORT.key === key ? (PROD_SORT.dir > 0 ? ' ▲' : ' ▼') : ''}</th>`;
+  el.innerHTML = `<div class="table-wrap"><table>
+    <thead><tr>${th('ref', 'Ref')}${th('desc', 'Descrizione')}${th('category', 'Categoria')}${th('qty', 'Q.tà totale', 1)}${th('nOrders', 'N. ordini', 1)}
+      ${th('last', 'Prezzo unit. ultimo', 1)}${th('varPct', 'Var. vs primo acquisto', 1)}${th('net', 'Prezzo netto', 1)}${th('vat', 'IVA †', 1)}${th('gross', 'Prezzo lordo †', 1)}</tr></thead>
+    <tbody>${sorted.map(p => `<tr>
+      <td style="white-space:nowrap">${esc(p.ref) || '—'}</td><td style="min-width:260px">${esc(p.desc)}</td><td><span class="badge blue">${esc(p.category)}</span></td>
+      <td class="num">${fmtNum(p.qty, 0)}</td><td class="num">${p.nOrders}</td>
+      <td class="num">${isNum(p.last) ? '€ ' + fmtUnit(p.last) : '—'}</td>
+      <td class="num">${p.varPct == null ? '—' : p.varPct === 0 ? '0,0 %' : `<span class="${p.varPct > 0 ? 'var-up' : 'var-down'}">${p.varPct > 0 ? '+' : ''}${fmtPct(p.varPct)}</span>`}</td>
+      <td class="num">${fmtEur(p.net)}</td><td class="num">${fmtEur(p.vat)} ${CALC}</td><td class="num"><b>${fmtEur(p.gross)}</b> ${CALC}</td>
+    </tr>`).join('')}</tbody></table></div>`;
+}
+
+function historyTable(os) {
+  if (!os.length) return '<p class="empty">Nessun ordine registrato per questo punto vendita.</p>';
+  const rows = [...os].reverse().map(o => {
+    const open = OPEN_ORDERS.has(o.id);
+    return `<tr class="clickable ${open ? 'open' : ''}" data-action="toggle-order" data-id="${o.id}" title="Clic per vedere le righe dell'ordine">
+      <td data-label="N. ordine"><b>${esc(o.orderNumber)}</b></td><td data-label="Data ordine">${fmtDate(o.orderDate)}</td>
+      <td data-label="Data spedizione">${fmtDate(orderShipDate(o))}</td><td data-label="Stato">${esc(o.status) || '—'}</td>
+      <td data-label="Prezzo netto" class="num">${fmtEur(o.net)}</td><td data-label="IVA" class="num">${fmtEur(o.vat)}</td><td data-label="Prezzo lordo" class="num"><b>${fmtEur(o.gross)}</b></td>
+      <td data-label="Azioni" class="num"><button class="btn sm" data-action="edit-order" data-id="${o.id}">Modifica</button>
+        <button class="btn sm danger" data-action="delete-order" data-id="${o.id}">Elimina</button></td></tr>
+      ${open ? `<tr class="expanded"><td colspan="8">${orderLinesTable(o)}</td></tr>` : ''}`;
+  }).join('');
+  return `<div class="table-wrap"><table class="cards">
+    <thead><tr><th>N. ordine</th><th>Data ordine</th><th>Data spedizione</th><th>Stato</th><th class="num">Prezzo netto</th><th class="num">IVA</th><th class="num">Prezzo lordo</th><th class="num">Azioni</th></tr></thead>
+    <tbody>${rows}</tbody></table></div>`;
+}
+function orderLinesTable(o) {
+  const sumLines = r2(o.lines.reduce((s, l) => s + (l.lineTotal || 0), 0));
+  const diff = r2(o.net - sumLines);
+  return `<div style="padding:10px 10px 14px 0">
+    <table class="inner-table"><thead><tr><th>Ref</th><th>Descrizione</th><th>Categoria</th><th class="num">Prezzo unit.</th><th class="num">Q.tà ord.</th><th class="num">Q.tà sped.</th>
+      <th>Data sped.</th><th class="num">Prezzo netto</th><th class="num">IVA †</th><th class="num">Prezzo lordo †</th></tr></thead>
+    <tbody>${o.lines.map(l => { const v = line3(l, o); return `<tr><td style="white-space:nowrap">${esc(l.ref) || '—'}</td><td style="min-width:240px">${esc(l.desc)}${l.pack ? `<div class="foot-note" style="margin:0">${esc(l.pack)}</div>` : ''}</td>
+      <td>${esc(l.category)}</td><td class="num">${isNum(l.unitPrice) ? '€ ' + fmtUnit(l.unitPrice) : '—'}</td><td class="num">${l.qtyOrdered ?? '—'}</td><td class="num">${l.qtyShipped ?? '—'}</td>
+      <td>${fmtDate(l.shipDate)}</td><td class="num">${fmtEur(v.net)}</td><td class="num">${fmtEur(v.vat)}</td><td class="num">${fmtEur(v.gross)}</td></tr>`; }).join('')
+      || '<tr><td colspan="10" class="empty">Nessuna riga.</td></tr>'}</tbody></table>
+    <div class="foot-note">Aliquota IVA dell'ordine: ${fmtPct(vatRate(o))} · Somma righe ${fmtEur(sumLines)}${Math.abs(diff) > 0.01 ? ` · <b>differenza rispetto al Prezzo netto: ${fmtEur(diff)}</b>` : ''}
+      ${o.fileName ? ' · File: ' + esc(o.fileName) : ''} · <span class="calc">†</span> calcolato</div></div>`;
+}
+
+/* =====================================================================
+   GRAFICI (SVG vanilla)
+   ===================================================================== */
+function niceMax(v) {
+  if (v <= 0) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(v)));
+  for (const m of [1, 1.2, 1.5, 2, 2.5, 3, 4, 5, 6, 8, 10]) if (m * p >= v) return m * p;
+  return 10 * p;
+}
+function monthlyChart(orders) {
+  if (!orders.length) return '<p class="empty">Nessun ordine registrato.</p>';
+  const agg = {};
+  orders.forEach(o => { const a = agg[o.orderDate.slice(0, 7)] ||= { net: 0, vat: 0, gross: 0, n: 0 }; a.net = r2(a.net + o.net); a.vat = r2(a.vat + o.vat); a.gross = r2(a.gross + o.gross); a.n++; });
+  const keys = Object.keys(agg).sort();
+  let end = todayIso().slice(0, 7); if (keys[keys.length - 1] > end) end = keys[keys.length - 1];
+  const months = []; let [y, m] = keys[0].split('-').map(Number);
+  while (true) { const k = `${y}-${pad(m)}`; months.push(k); if (k >= end || months.length > 600) break; if (++m > 12) { m = 1; y++; } }
+  const list = months.slice(-24);
+  const W = 540, H = 250, L = 70, R = 10, T = 12, B = 34, pw = W - L - R, ph = H - T - B;
+  const max = niceMax(Math.max(...list.map(k => agg[k] ? agg[k].net : 0), 1));
+  let g = '';
+  for (let i = 0; i <= 4; i++) {
+    const yy = T + ph - ph * i / 4;
+    g += `<line x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}" stroke="${i ? '#E3E7ED' : '#111'}" stroke-width="1"/>
+      <text x="${L - 8}" y="${yy + 4}" text-anchor="end" font-size="11" fill="#5A6372">€ ${fmtNum(max * i / 4, 0)}</text>`;
+  }
+  const step = pw / list.length, bw = Math.min(44, step * 0.66), every = Math.ceil(list.length / 12);
+  list.forEach((k, i) => {
+    const a = agg[k] || { net: 0, vat: 0, gross: 0, n: 0 };
+    const h = ph * a.net / max, x = L + i * step + (step - bw) / 2;
+    const [yy, mm] = k.split('-').map(Number);
+    const tip = tip3(`${MESI_LUNGHI[mm - 1]} ${yy}`, { ...a, extra: `${a.n} ordin${a.n === 1 ? 'e' : 'i'}` });
+    g += `<rect x="${L + i * step}" y="${T}" width="${step}" height="${ph}" fill="transparent" data-tip="${tip}"/>`;
+    if (a.net > 0) g += `<rect x="${x}" y="${T + ph - h}" width="${bw}" height="${Math.max(h, 1)}" rx="3" fill="#1E5AA8" data-tip="${tip}" onmouseenter="this.setAttribute('fill','#0B2A5B')" onmouseleave="this.setAttribute('fill','#1E5AA8')"/>`;
+    if (i % every === 0) g += `<text x="${L + i * step + step / 2}" y="${H - B + 18}" text-anchor="middle" font-size="11" fill="#111">${MESI[mm - 1]} ${String(yy).slice(2)}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spesa mensile">${g}</svg>
+    <div class="foot-note">Barre sul prezzo netto; passa il mouse per netto, IVA e lordo del mese.</div>`;
+}
+function categoryChart(cats) {
+  const entries = Object.entries(cats).filter(([, v]) => v.net > 0).sort((a, b) => b[1].net - a[1].net);
+  const total = entries.reduce((s, [, v]) => s + v.net, 0);
+  if (!total) return '<p class="empty">Nessuna riga prodotto con importo.</p>';
+  const W = 400, rowH = 34, H = entries.length * rowH + 6, LW = 104, VW = 130, bwMax = W - LW - VW - 10;
+  const max = entries[0][1].net;
+  const g = entries.map(([c, v], i) => {
+    const y = i * rowH + 6, w = Math.max(2, bwMax * v.net / max);
+    const tip = tip3(c, { ...v, extra: fmtPct(v.net / total) + ' del netto righe' }, true);
+    return `<g data-tip="${tip}"><rect x="0" y="${y - 3}" width="${W}" height="${rowH - 4}" fill="transparent"/>
+      <text x="0" y="${y + 17}" font-size="13" fill="#111">${esc(c)}</text>
+      <rect x="${LW}" y="${y + 3}" width="${w}" height="20" rx="4" fill="${CAT_COLORS[c] || '#999'}" stroke="#111" stroke-opacity=".15"/>
+      <text x="${LW + w + 8}" y="${y + 17}" font-size="12" fill="#111">€ ${fmtNum(v.net)} · ${fmtPct(v.net / total)}</text></g>`;
+  }).join('');
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Spesa per categoria">${g}</svg>
+    <div class="foot-note">Somma delle righe prodotto (netto). Nel tooltip IVA e lordo sono calcolati <span class="calc">†</span>.</div>`;
+}
+
+/* =====================================================================
+   AGGIUNGI ORDINE: caricamento file → scelta PV → anteprima → salvataggio
+   ===================================================================== */
+let ADD = null; // { step:'files'|'preview', files:[], drafts:[], editing:false }
+
+function openModal(html, wide) {
+  $('#modal-root').innerHTML = `<div class="modal-back"><div class="modal ${wide ? 'wide' : ''}" role="dialog" aria-modal="true">${html}</div></div>`;
+}
+function closeModal(force) {
+  if (!force && ADD && (ADD.files.length || ADD.drafts.length) && !confirm('Chiudere senza salvare? I dati caricati andranno persi.')) return;
+  $('#modal-root').innerHTML = ''; ADD = null;
+}
+
+function openAddOrder() {
+  ADD = { step: 'files', files: [], drafts: [], editing: false };
+  renderAddStep();
+}
+function pvOptions(sel, placeholder = '— Seleziona punto vendita —') {
+  return `<option value="">${placeholder}</option>` + PV_LIST.map(p => `<option value="${esc(p)}" ${p === sel ? 'selected' : ''}>${esc(p)}</option>`).join('');
+}
+function renderAddStep() {
+  if (!ADD) return;
+  if (ADD.step === 'preview') return renderPreview();
+  const f = ADD.files;
+  const allPv = f.length && f.every(x => x.pv);
+  const busy = f.some(x => x.status === 'reading');
+  openModal(`
+    <div class="modal-h"><h2>Aggiungi ordine · 1. Carica i PDF e scegli il punto vendita</h2><button class="x" data-action="close-modal" aria-label="Chiudi">×</button></div>
+    <div class="modal-b">
+      <div class="dropzone" id="dropzone">
+        <div class="big">Trascina qui le conferme d'ordine Lyreco</div>
+        <p>PDF (o .txt con lo stesso testo) · anche più file insieme</p>
+        <button class="btn blue" data-action="pick-files">Scegli file…</button>
+        <input type="file" id="file-input" multiple accept=".pdf,.txt,application/pdf,text/plain" hidden>
+      </div>
+      ${!window.pdfjsLib ? '<div class="note" style="border-left-color:var(--red)">PDF.js non è stato caricato (serve una connessione internet): la lettura dei PDF non è disponibile, puoi caricare file .txt o inserire l\'ordine a mano.</div>' : ''}
+      ${f.length ? `<div class="note">Il punto vendita va scelto <b>manualmente</b> per ogni file. Indirizzo, codice cliente e ragione sociale letti dal PDF sono mostrati solo come informazione.</div>` : ''}
+      ${f.length > 1 ? `<div class="applyall"><b>Applica lo stesso PV a tutti:</b><select id="apply-all-sel">${pvOptions('')}</select><button class="btn sm" data-action="apply-all-pv">Applica</button></div>` : ''}
+      <div class="files">${f.map(x => fileRowHtml(x)).join('')}</div>
+    </div>
+    <div class="modal-f">
+      <button class="btn" data-action="manual-entry">Inserimento manuale (senza file)</button>
+      <span class="spacer"></span>
+      <button class="btn" data-action="close-modal">Annulla</button>
+      <button class="btn primary" data-action="to-preview" ${allPv && !busy ? '' : 'disabled'} title="${allPv ? '' : 'Seleziona un punto vendita per ogni file'}">Continua all'anteprima →</button>
+    </div>`, true);
+  bindDropzone();
+}
+function fileRowHtml(x) {
+  const p = x.parsed;
+  let info = '';
+  if (x.status === 'reading') info = '<span class="badge grey">Lettura in corso…</span>';
+  else if (x.status === 'error') info = `<span class="badge red">Errore</span> ${esc(x.error)} — potrai comunque inserire i dati a mano.`;
+  else if (p) info = `<span class="badge green">Letto</span> Ordine <b>${esc(p.orderNumber) || '?'}</b> del <b>${p.orderDate ? fmtDate(p.orderDate) : '?'}</b> · ${p.lines.length} righe · Prezzo lordo <b>${fmtEur(p.gross)}</b><br>
+    <i>Solo informativo:</i> ${esc(p.billingName) || '—'} · cod. cliente sped. <b>${esc(p.shipCode) || '—'}</b> · ${esc(p.shipName) || ''}<br>${esc(p.shipAddress) || 'indirizzo non trovato'}${p.creator ? ' · creatore: ' + esc(p.creator) : ''}`;
+  return `<div class="file-row">
+    <div><div class="name">📄 ${esc(x.name)} <button class="btn sm danger" data-action="remove-file" data-key="${x.key}" style="margin-left:6px">Rimuovi</button></div><div class="info">${info}</div></div>
+    <div><label style="font-size:12px;font-weight:700;color:var(--navy)">Punto vendita (obbligatorio)</label>
+      <select data-filepv="${x.key}" class="${x.pv ? '' : 'invalid'}">${pvOptions(x.pv)}</select></div></div>`;
+}
+function bindDropzone() {
+  const dz = $('#dropzone'), inp = $('#file-input');
+  if (!dz) return;
+  ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('over'); }));
+  ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('over'); }));
+  dz.addEventListener('drop', e => addFiles([...e.dataTransfer.files]));
+  inp.addEventListener('change', () => { addFiles([...inp.files]); inp.value = ''; });
+}
+function addFiles(files) {
+  const ok = files.filter(f => /\.(pdf|txt)$/i.test(f.name) || /pdf|text\/plain/.test(f.type));
+  if (ok.length < files.length) toast('Alcuni file sono stati ignorati: sono accettati solo PDF e .txt.', 'error');
+  ok.forEach(file => {
+    const entry = { key: uid(), file, name: file.name, status: 'reading', parsed: null, error: '', pv: '' };
+    ADD.files.push(entry);
+    readFileEntry(entry);
+  });
+  renderAddStep();
+}
+async function readFileEntry(entry) {
+  try {
+    let lines;
+    if (/\.pdf$/i.test(entry.name) || entry.file.type === 'application/pdf') {
+      if (!window.pdfjsLib) throw new Error('PDF.js non disponibile (serve connessione internet).');
+      lines = await extractPdfLines(entry.file);
+    } else lines = textToLines(await entry.file.text());
+    entry.parsed = parseLyreco(lines);
+    entry.status = 'ok';
+  } catch (err) {
+    entry.status = 'error'; entry.error = err && err.message ? err.message : String(err);
+  }
+  if (ADD && ADD.step === 'files') renderAddStep();
+}
+
+/* ---------- Bozze (anteprima modificabile: tutti i campi sono stringhe) ---------- */
+const F_LABELS = { orderNumber: 'Numero ordine', status: 'Stato', orderDate: 'Data ordine', billingName: 'Ragione sociale', billingCode: 'Codice cliente',
+  shipCode: 'Codice cliente di spedizione', shipName: 'Destinatario', shipContact: 'Referente', shipAddress: 'Indirizzo di consegna', notes: 'Note consegna',
+  net: 'Prezzo netto', vat: 'IVA', gross: 'Prezzo lordo' };
+const F_FLAG = ['orderNumber', 'status', 'orderDate', 'billingName', 'billingCode', 'shipCode', 'shipAddress', 'net', 'vat', 'gross'];
+const L_FLAG = ['ref', 'desc', 'unitPrice', 'qtyOrdered', 'lineTotal'];
+const L_SOFT = ['qtyShipped', 'shipDate'];
+const L_LABELS = { ref: 'Ref', desc: 'descrizione', unitPrice: 'prezzo unitario', qtyOrdered: 'q.tà ordinata', lineTotal: 'importo riga', qtyShipped: 'q.tà spedita', shipDate: 'data spedizione' };
+
+function draftFrom(src, meta) {
+  const s = v => v == null ? '' : String(v);
+  return {
+    key: uid(), fileName: meta.fileName || '', pv: meta.pv || '', editingId: meta.editingId || null, dupAction: 'skip',
+    warnings: meta.warnings || [], error: meta.error || '', importedAt: meta.importedAt || null, creator: s(src.creator), docDate: src.docDate || '',
+    f: { orderNumber: s(src.orderNumber), status: s(src.status), orderDate: src.orderDate ? fmtDate(src.orderDate) : '', billingName: s(src.billingName),
+      billingCode: s(src.billingCode), shipCode: s(src.shipCode), shipName: s(src.shipName), shipContact: s(src.shipContact), shipAddress: s(src.shipAddress),
+      notes: s(src.notes), net: isNum(src.net) ? fmtNum(src.net) : '', vat: isNum(src.vat) ? fmtNum(src.vat) : '', gross: isNum(src.gross) ? fmtNum(src.gross) : '' },
+    lines: (src.lines || []).map(l => ({ ref: s(l.ref), desc: s(l.desc), pack: s(l.pack), category: l.category || categorize(l.desc),
+      unitPrice: isNum(l.unitPrice) ? fmtUnit(l.unitPrice) : '', qtyOrdered: s(l.qtyOrdered), qtyShipped: s(l.qtyShipped),
+      shipDate: l.shipDate ? fmtDate(l.shipDate) : '', lineTotal: isNum(l.lineTotal) ? fmtNum(l.lineTotal) : '' }))
+  };
+}
+const emptyLine = () => ({ ref: '', desc: '', pack: '', category: 'Altro', unitPrice: '', qtyOrdered: '', qtyShipped: '', shipDate: '', lineTotal: '' });
+
+function renderPreview() {
+  const n = ADD.drafts.length;
+  openModal(`
+    <div class="modal-h"><h2>${ADD.editing ? 'Modifica ordine' : `Aggiungi ordine · 2. Anteprima e conferma (${n} ${n === 1 ? 'ordine' : 'ordini'})`}</h2><button class="x" data-action="close-modal" aria-label="Chiudi">×</button></div>
+    <div class="modal-b">
+      <div class="note">Controlla e correggi i dati: i campi <span style="background:var(--yellow-bg);border:2px solid var(--yellow);padding:0 4px;border-radius:4px">evidenziati</span> non sono stati trovati nel PDF.
+        Nulla viene salvato finché non premi <b>${ADD.editing ? 'Salva modifiche' : 'Conferma e salva'}</b>.</div>
+      ${ADD.drafts.map((d, i) => draftHtml(d, i)).join('')}
+    </div>
+    <div class="modal-f"><span class="spacer"></span>
+      <button class="btn" data-action="close-modal">Annulla</button>
+      <button class="btn primary" data-action="save-drafts">${ADD.editing ? 'Salva modifiche' : 'Conferma e salva'}</button></div>`, true);
+  ADD.drafts.forEach((d, i) => refreshDraft(i));
+}
+function fInput(di, k, d, opts = {}) {
+  const v = d.f[k], miss = F_FLAG.includes(k) && !v.trim();
+  return `<label class="fld ${opts.wide ? 'wide' : ''}"><span>${F_LABELS[k]}</span><input data-draft="${di}" data-field="${k}" value="${esc(v)}" class="${miss ? 'missing' : ''}"
+    ${opts.ph ? `placeholder="${opts.ph}"` : ''} ${opts.num ? 'inputmode="decimal" style="text-align:right"' : ''}></label>`;
+}
+function draftHtml(d, di) {
+  return `<div class="draft" id="draft-${di}">
+    <div class="draft-h"><span class="t">${ADD.drafts.length > 1 ? `Ordine ${di + 1} di ${ADD.drafts.length} · ` : ''}${esc(d.fileName || 'Inserimento manuale')}</span>
+      ${d.error ? `<span class="badge red">Lettura non riuscita: ${esc(d.error)}</span>` : ''}</div>
+    <div class="draft-b">
+      <div class="pv-choice"><b>Punto vendita assegnato (scelto da te):</b>
+        <select data-draft="${di}" data-field="pv" class="${d.pv ? '' : 'invalid'}">${pvOptions(d.pv)}</select>
+        <span style="font-size:12px;color:var(--muted)">Il PV scelto prevale sempre sui dati di spedizione del PDF.</span></div>
+      <div class="fgroup">Dati ordine</div>
+      <div class="fgrid">${fInput(di, 'orderNumber', d)}${fInput(di, 'status', d)}${fInput(di, 'orderDate', d, { ph: 'gg/mm/aaaa' })}
+        ${d.creator ? `<label class="fld wide"><span>Creatore (dal PDF)</span><input value="${esc(d.creator)}" readonly style="background:#F5F7FA"></label>` : ''}</div>
+      <div class="fgroup">Fatturazione e spedizione (solo informativo)</div>
+      <div class="fgrid">${fInput(di, 'billingName', d)}${fInput(di, 'billingCode', d)}${fInput(di, 'shipCode', d)}${fInput(di, 'shipContact', d)}
+        ${fInput(di, 'shipName', d, { wide: true })}${fInput(di, 'shipAddress', d, { wide: true })}${fInput(di, 'notes', d, { wide: true })}</div>
+      <div class="fgroup">Totali ordine (dal PDF)</div>
+      <div class="fgrid">${fInput(di, 'net', d, { num: 1 })}${fInput(di, 'vat', d, { num: 1 })}${fInput(di, 'gross', d, { num: 1 })}
+        <div class="fld"><span>Aliquota IVA (calcolata)</span><input id="rate-${di}" readonly style="background:#F5F7FA;text-align:right"></div></div>
+      <div class="fgroup">Righe prodotto</div>
+      <div class="table-wrap"><table class="ltable">
+        <thead><tr><th style="min-width:95px">Ref</th><th style="min-width:240px">Descrizione</th><th style="min-width:130px">Categoria</th><th class="num" style="min-width:80px">Prezzo unit.</th>
+          <th class="num" style="min-width:56px">Q.tà ord.</th><th class="num" style="min-width:56px">Q.tà sped.</th><th style="min-width:100px">Data sped.</th>
+          <th class="num" style="min-width:90px">Prezzo netto</th><th class="num">IVA †</th><th class="num">Prezzo lordo †</th><th></th></tr></thead>
+        <tbody id="lines-${di}">${d.lines.map((l, li) => lineRowHtml(di, li, l)).join('')}</tbody>
+      </table></div>
+      <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-top:8px">
+        <button class="btn sm" data-action="add-line" data-draft="${di}">+ Aggiungi riga</button>
+        <span class="foot-note" style="margin:0"><span class="calc">†</span> IVA e lordo di riga calcolati con l'aliquota dell'ordine</span></div>
+      <div class="checks" id="checks-${di}"></div>
+    </div></div>`;
+}
+function lineRowHtml(di, li, l) {
+  const inp = (k, cls = '', ph = '') => {
+    const miss = !String(l[k]).trim() ? (L_FLAG.includes(k) ? 'missing' : L_SOFT.includes(k) ? 'missing-soft' : '') : '';
+    return `<input class="${cls} ${miss}" data-draft="${di}" data-line="${li}" data-lfield="${k}" value="${esc(l[k])}" ${ph ? `placeholder="${ph}"` : ''} ${cls === 'n' ? 'inputmode="decimal"' : ''}>`;
+  };
+  return `<tr><td>${inp('ref')}</td><td>${inp('desc')}${l.pack ? `<div class="pack">Unità di vendita: ${esc(l.pack)}</div>` : ''}</td>
+    <td><select data-draft="${di}" data-line="${li}" data-lfield="category">${CATEGORIES.map(c => `<option ${c === l.category ? 'selected' : ''}>${c}</option>`).join('')}</select></td>
+    <td>${inp('unitPrice', 'n')}</td><td>${inp('qtyOrdered', 'n')}</td><td>${inp('qtyShipped', 'n')}</td><td>${inp('shipDate', '', 'gg/mm/aaaa')}</td><td>${inp('lineTotal', 'n')}</td>
+    <td class="num" id="lv-${di}-${li}"></td><td class="num" id="lg-${di}-${li}"></td>
+    <td><button class="btn sm danger" data-action="del-line" data-draft="${di}" data-line="${li}" title="Elimina riga">✕</button></td></tr>`;
+}
+/** Controlli automatici (a)-(d) su una bozza */
+function draftChecks(d, di) {
+  const net = itNum(d.f.net), vat = itNum(d.f.vat), gross = itNum(d.f.gross);
+  const out = []; let warn = false;
+  const add = (st, msg, sub) => { out.push({ st, msg, sub }); if (st === 'warn' || st === 'err') warn = true; };
+  // (a) somma righe = Prezzo netto
+  const lt = d.lines.map(l => itNum(l.lineTotal));
+  const noAmt = lt.filter(v => v == null).length;
+  const sum = r2(lt.reduce((s, v) => s + (v || 0), 0));
+  if (!d.lines.length) add('warn', '(a) Nessuna riga prodotto: impossibile verificare la somma delle righe.');
+  else if (net == null) add('warn', '(a) Prezzo netto mancante: impossibile verificare la somma delle righe.');
+  else if (Math.abs(sum - net) <= 0.01 && !noAmt) add('ok', `(a) Somma righe ${fmtEur(sum)} = Prezzo netto ${fmtEur(net)}`);
+  else add('warn', `(a) Somma righe ${fmtEur(sum)} ≠ Prezzo netto ${fmtEur(net)} · differenza ${fmtEur(r2(net - sum))}${noAmt ? ` · ${noAmt} righe senza importo` : ''}`,
+    'Possibili cause: righe non lette correttamente o spese non elencate come righe (es. spese di consegna). Puoi correggere o aggiungere una riga.');
+  // (b) netto + IVA = lordo
+  if (net == null || vat == null || gross == null) add('warn', '(b) Impossibile verificare Prezzo netto + IVA = Prezzo lordo: manca almeno un totale.');
+  else if (Math.abs(r2(net + vat) - gross) <= 0.01) add('ok', `(b) Prezzo netto ${fmtEur(net)} + IVA ${fmtEur(vat)} = Prezzo lordo ${fmtEur(gross)}`);
+  else add('warn', `(b) Prezzo netto + IVA = ${fmtEur(r2(net + vat))} ≠ Prezzo lordo ${fmtEur(gross)}`);
+  // (c) duplicati
+  const num = d.f.orderNumber.trim();
+  const existing = num ? DB.orders.find(o => o.orderNumber === num && o.id !== d.editingId) : null;
+  const batchDup = num && ADD.drafts.some((o, j) => j !== di && o.f.orderNumber.trim() === num);
+  if (batchDup) add('err', `(c) Il numero ordine ${num} compare in più file di questo caricamento: rimuovi o correggi il duplicato.`);
+  else if (existing) out.push({ st: 'err', msg: `(c) L'ordine ${num} è già registrato (PV ${existing.pv}, del ${fmtDate(existing.orderDate)}, ${fmtEur(existing.gross)} lordo).`, dup: true });
+  else if (num) add('ok', '(c) Numero ordine non presente in archivio.');
+  // (d) campi non trovati / vuoti
+  const miss = F_FLAG.filter(k => !d.f[k].trim()).map(k => F_LABELS[k]);
+  if (!d.pv) miss.unshift('Punto vendita');
+  d.lines.forEach((l, i) => { const m = L_FLAG.filter(k => !String(l[k]).trim()); if (m.length) miss.push(`riga ${i + 1}: ${m.map(k => L_LABELS[k]).join(', ')}`); });
+  const soft = d.lines.reduce((n, l) => n + L_SOFT.filter(k => !String(l[k]).trim()).length, 0);
+  if (miss.length) add('warn', '(d) Campi non trovati o vuoti: ' + miss.join(' · '));
+  else add('ok', '(d) Tutti i campi principali sono compilati.');
+  if (soft) out.push({ st: 'info', msg: `Dati di spedizione mancanti in ${soft} campi (normale se l'ordine non è ancora spedito).` });
+  d.warnings.forEach(w => out.push({ st: 'info', msg: 'Nota di lettura: ' + w }));
+  return { items: out, warn, existing, batchDup, net, vat };
+}
+function refreshDraft(di) {
+  const d = ADD.drafts[di], ch = draftChecks(d, di);
+  const rate = ch.net && ch.vat != null ? ch.vat / ch.net : null;
+  const rEl = $('#rate-' + di); if (rEl) rEl.value = rate == null ? '' : fmtPct(rate);
+  d.lines.forEach((l, li) => {
+    const v = itNum(l.lineTotal);
+    const vat = v != null && rate != null ? r2(v * rate) : null;
+    const a = $(`#lv-${di}-${li}`), b = $(`#lg-${di}-${li}`);
+    if (a) a.textContent = vat == null ? '—' : fmtEur(vat);
+    if (b) b.textContent = vat == null ? '—' : fmtEur(r2(v + vat));
+  });
+  const ic = { ok: '✔', warn: '⚠', err: '✖', info: 'ℹ' };
+  $('#checks-' + di).innerHTML = '<h3>Controlli automatici</h3>' + ch.items.map(c => `<div class="chk ${c.st}"><span class="ic">${ic[c.st]}</span><div>${esc(c.msg)}
+    ${c.sub ? `<div class="sub">${esc(c.sub)}</div>` : ''}
+    ${c.dup ? `<div style="margin-top:4px;color:var(--ink)">Cosa vuoi fare?
+      <label><input type="radio" name="dup-${di}" value="skip" data-dup="${di}" ${d.dupAction !== 'overwrite' ? 'checked' : ''}> Non salvare questo ordine (duplicato bloccato)</label>
+      <label style="margin-left:10px"><input type="radio" name="dup-${di}" value="overwrite" data-dup="${di}" ${d.dupAction === 'overwrite' ? 'checked' : ''}> Sovrascrivi l'ordine esistente</label></div>` : ''}</div></div>`).join('');
+}
+/** Converte una bozza in ordine salvabile (con validazione) */
+function orderFromDraft(d) {
+  const errors = [];
+  if (!PV_LIST.includes(d.pv)) errors.push('punto vendita non selezionato');
+  const num = d.f.orderNumber.trim(); if (!num) errors.push('numero ordine mancante');
+  const date = parseItDate(d.f.orderDate); if (!date) errors.push('data ordine mancante o non valida (gg/mm/aaaa)');
+  const net = itNum(d.f.net), vat = itNum(d.f.vat), gross = itNum(d.f.gross);
+  if (net == null) errors.push('Prezzo netto mancante o non numerico');
+  if (vat == null) errors.push('IVA mancante o non numerica');
+  if (gross == null) errors.push('Prezzo lordo mancante o non numerico');
+  const lines = d.lines.map((l, i) => {
+    const sd = l.shipDate.trim() ? parseItDate(l.shipDate) : '';
+    if (sd === null) errors.push(`riga ${i + 1}: data spedizione non valida`);
+    ['unitPrice', 'qtyOrdered', 'qtyShipped', 'lineTotal'].forEach(k => { if (String(l[k]).trim() && itNum(l[k]) == null) errors.push(`riga ${i + 1}: ${L_LABELS[k]} non numerico`); });
+    return { ref: l.ref.trim(), desc: l.desc.trim(), pack: l.pack || '', category: l.category, unitPrice: itNum(l.unitPrice), qtyOrdered: itNum(l.qtyOrdered),
+      qtyShipped: itNum(l.qtyShipped), shipDate: sd || '', lineTotal: itNum(l.lineTotal) };
+  }).filter(l => l.ref || l.desc || isNum(l.lineTotal));
+  const now = new Date().toISOString();
+  return { errors, order: { id: d.editingId || uid(), pv: d.pv, orderNumber: num, status: d.f.status.trim(), orderDate: date, docDate: d.docDate || '',
+    billingName: d.f.billingName.trim(), billingCode: d.f.billingCode.trim(), shipCode: d.f.shipCode.trim(), shipName: d.f.shipName.trim(),
+    shipContact: d.f.shipContact.trim(), shipAddress: d.f.shipAddress.trim(), notes: d.f.notes.trim(), creator: d.creator || '',
+    net: net == null ? null : r2(net), vat: vat == null ? null : r2(vat), gross: gross == null ? null : r2(gross), lines,
+    fileName: d.fileName, importedAt: d.importedAt || now, updatedAt: now } };
+}
+function saveDrafts() {
+  const errors = [], toSave = []; let skipped = 0, warned = 0;
+  ADD.drafts.forEach((d, i) => {
+    const tag = `Ordine ${i + 1} (${d.fileName || 'manuale'})`;
+    const r = orderFromDraft(d);
+    if (r.errors.length) { errors.push(`${tag}: ${r.errors.join('; ')}`); return; }
+    const ch = draftChecks(d, i);
+    if (ch.batchDup) { errors.push(`${tag}: numero ordine duplicato in questo caricamento`); return; }
+    if (ch.existing && d.dupAction !== 'overwrite') { skipped++; return; }
+    if (ch.warn) warned++;
+    toSave.push({ order: r.order, replaceId: ch.existing ? ch.existing.id : null });
+  });
+  if (errors.length) { alert('Impossibile salvare. Correggi:\n\n• ' + errors.join('\n• ')); return; }
+  if (!toSave.length) { alert('Nessun ordine da salvare: i duplicati non sono stati sovrascritti.'); return; }
+  if (warned && !confirm(`${warned} ordin${warned === 1 ? 'e ha' : 'i hanno'} avvisi di controllo non risolti (somme non coincidenti o campi vuoti).\nSalvare comunque?`)) return;
+  toSave.forEach(({ order, replaceId }) => {
+    if (replaceId) DB.orders = DB.orders.filter(o => o.id !== replaceId);
+    const idx = DB.orders.findIndex(o => o.id === order.id);
+    if (idx >= 0) DB.orders[idx] = order; else DB.orders.push(order);
+  });
+  const ok = saveDB();
+  closeModal(true);
+  render();
+  if (ok) toast(`${toSave.length} ordin${toSave.length === 1 ? 'e salvato' : 'i salvati'}${skipped ? ` · ${skipped} duplicat${skipped === 1 ? 'o' : 'i'} non salvat${skipped === 1 ? 'o' : 'i'}` : ''}.`);
+}
+function openEditOrder(id) {
+  const o = DB.orders.find(x => x.id === id);
+  if (!o) return;
+  ADD = { step: 'preview', files: [], editing: true, drafts: [draftFrom(o, { pv: o.pv, fileName: o.fileName, editingId: o.id, importedAt: o.importedAt })] };
+  renderPreview();
+}
+
+/* =====================================================================
+   IMPOSTAZIONI
+   ===================================================================== */
+function openSettings() {
+  const s = DB.settings;
+  openModal(`
+    <div class="modal-h"><h2>Impostazioni</h2><button class="x" data-action="close-modal" aria-label="Chiudi">×</button></div>
+    <div class="modal-b">
+      <fieldset><legend>Soglie indicatore di stato (giorni dall'ultimo ordine)</legend>
+        <div class="set-row"><span class="dot green"></span> Verde fino a <input type="number" id="set-green" min="0" step="1" value="${s.greenMax}"> giorni</div>
+        <div class="set-row"><span class="dot yellow"></span> Giallo fino a <input type="number" id="set-yellow" min="1" step="1" value="${s.yellowMax}"> giorni</div>
+        <div class="set-row"><span class="dot red"></span> Rosso oltre la soglia gialla o se il PV non ha mai ordinato</div></fieldset>
+      <fieldset><legend>Parole chiave delle categorie</legend>
+        <div class="foot-note" style="margin-top:0">Separate da virgola, maiuscole/accenti ignorati; ogni parola corrisponde all'inizio di una parola della descrizione.
+          Ordine di valutazione: ${CAT_EVAL_ORDER.join(' → ')}; se nessuna corrisponde: Altro. Le nuove parole chiave valgono per i prossimi caricamenti.</div>
+        ${CAT_EVAL_ORDER.map(c => `<label class="fld" style="margin-top:8px"><span>${c}</span><textarea data-kw="${esc(c)}">${esc(s.keywords[c].join(', '))}</textarea></label>`).join('')}
+      </fieldset>
+      <fieldset><legend>Manutenzione dati</legend>
+        <div class="set-row"><button class="btn sm" data-action="settings-recat">Riapplica le categorie a tutti gli ordini salvati</button>
+          <span class="foot-note" style="margin:0">sovrascrive le categorie modificate a mano</span></div>
+        <div class="set-row"><button class="btn sm danger" data-action="wipe-all">Elimina tutti i dati</button>
+          <span class="foot-note" style="margin:0">esporta prima un backup</span></div></fieldset>
+    </div>
+    <div class="modal-f"><button class="btn" data-action="settings-reset">Ripristina predefiniti</button><span class="spacer"></span>
+      <button class="btn" data-action="close-modal">Annulla</button><button class="btn primary" data-action="settings-save">Salva impostazioni</button></div>`);
+}
+function readSettingsForm() {
+  const g = parseInt($('#set-green').value, 10), y = parseInt($('#set-yellow').value, 10);
+  if (!Number.isInteger(g) || g < 0 || !Number.isInteger(y) || y <= g) { alert('Soglie non valide: la soglia gialla deve essere maggiore di quella verde.'); return null; }
+  const kw = { ...DB.settings.keywords };
+  document.querySelectorAll('[data-kw]').forEach(t => kw[t.dataset.kw] = t.value.split(/[,;\n]/).map(x => x.trim()).filter(Boolean));
+  return { greenMax: g, yellowMax: y, keywords: kw };
+}
+
+/* =====================================================================
+   BACKUP JSON, IMPORTAZIONE, CSV
+   ===================================================================== */
+function exportJSON() {
+  download(JSON.stringify({ app: 'ordini-ufficio-pv', exportedAt: new Date().toISOString(), ...DB }, null, 2), `backup_ordini_ufficio_${todayIso()}.json`, 'application/json');
+}
+let IMPORT_DATA = null;
+function handleImportFile(file) {
+  file.text().then(txt => {
+    let d;
+    try { d = JSON.parse(txt); } catch (e) { alert('Il file non è un JSON valido.'); return; }
+    if (!d || !Array.isArray(d.orders)) { alert('Il file non sembra un backup di questa dashboard (manca l\'elenco "orders").'); return; }
+    const valid = d.orders.filter(validStoredOrder);
+    IMPORT_DATA = { orders: valid, settings: d.settings ? normalizeSettings(d.settings) : null };
+    const newCount = valid.filter(o => !DB.orders.some(x => x.orderNumber === o.orderNumber)).length;
+    openModal(`<div class="modal-h"><h2>Importa backup</h2><button class="x" data-action="close-modal">×</button></div>
+      <div class="modal-b"><p>Il file <b>${esc(file.name)}</b> contiene <b>${valid.length}</b> ordini validi${d.orders.length > valid.length ? ` (${d.orders.length - valid.length} scartati perché incompleti o con PV fuori elenco)` : ''}.</p>
+        <p><b>Unisci</b>: aggiunge solo i ${newCount} ordini con numero non già presente.<br><b>Sostituisci tutto</b>: cancella i ${DB.orders.length} ordini attuali e carica il backup (impostazioni comprese).</p></div>
+      <div class="modal-f"><button class="btn" data-action="close-modal">Annulla</button><button class="btn" data-action="import-merge">Unisci</button>
+        <button class="btn danger" data-action="import-replace">Sostituisci tutto</button></div>`);
+  }).catch(e => alert('Lettura del file non riuscita: ' + e.message));
+}
+function exportCSV() {
+  if (!DB.orders.length) { toast('Nessun ordine da esportare.', 'error'); return; }
+  const n = v => isNum(v) ? v.toFixed(2).replace('.', ',') : '';
+  const cell = v => { const s = String(v ?? ''); return /[";\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; };
+  const rows = [['PV', 'Numero ordine', 'Data ordine', 'Data spedizione', 'Stato', 'Ragione sociale fatturazione', 'Codice cliente spedizione', 'Indirizzo consegna', 'N. righe', 'Prezzo netto', 'IVA', 'Prezzo lordo']];
+  [...DB.orders].sort((a, b) => PV_LIST.indexOf(a.pv) - PV_LIST.indexOf(b.pv) || a.orderDate.localeCompare(b.orderDate)).forEach(o =>
+    rows.push([o.pv, o.orderNumber, fmtDate(o.orderDate), orderShipDate(o) ? fmtDate(orderShipDate(o)) : '', o.status, o.billingName, o.shipCode, o.shipAddress, o.lines.length, n(o.net), n(o.vat), n(o.gross)]));
+  download('﻿' + rows.map(r => r.map(cell).join(';')).join('\r\n'), `ordini_ufficio_${todayIso()}.csv`, 'text/csv;charset=utf-8');
+}
+
+/* =====================================================================
+   ROUTING E GESTIONE EVENTI
+   ===================================================================== */
+function currentPv() {
+  const m = decodeURIComponent(location.hash || '').match(/^#\/pv\/(.+)$/);
+  return m && PV_LIST.includes(m[1]) ? m[1] : null;
+}
+function render() { const pv = currentPv(); if (pv) renderDetail(pv); else renderList(); }
+window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
+
+const ACTIONS = {
+  'load-demo': () => { if (DB.orders.length && !confirm('Sostituire gli ordini attuali con i dati dimostrativi?')) return; DB = demoDB(); saveDB(); render(); toast('Dati dimostrativi caricati.'); },
+  'clear-all': () => { if (!confirm('Eliminare tutti gli ordini dall\'archivio del browser?')) return; DB = defaultDB(); saveDB(); render(); toast('Archivio svuotato.'); },
+  'add-order': () => openAddOrder(),
+  'settings': () => openSettings(),
+  'export-json': () => exportJSON(),
+  'import-json': () => $('#import-input').click(),
+  'export-csv': () => exportCSV(),
+  'open-pv': el => { location.hash = '#/pv/' + encodeURIComponent(el.dataset.pv); },
+  'back': () => { location.hash = ''; },
+  'close-modal': () => closeModal(),
+  'pick-files': () => $('#file-input').click(),
+  'remove-file': el => { ADD.files = ADD.files.filter(f => f.key !== el.dataset.key); renderAddStep(); },
+  'apply-all-pv': () => { const v = $('#apply-all-sel').value; if (!v) { toast('Seleziona prima un punto vendita.', 'error'); return; } ADD.files.forEach(f => f.pv = v); renderAddStep(); },
+  'to-preview': () => {
+    if (!ADD.files.length || ADD.files.some(f => !f.pv)) return;
+    ADD.drafts = ADD.files.map(f => draftFrom(f.parsed || {}, { fileName: f.name, pv: f.pv, warnings: f.parsed ? f.parsed.warnings : [], error: f.status === 'error' ? f.error : '' }));
+    ADD.step = 'preview'; renderPreview();
+  },
+  'manual-entry': () => { ADD.drafts = [draftFrom({ lines: [] }, { fileName: '' })]; ADD.drafts[0].lines.push(emptyLine()); ADD.files = []; ADD.step = 'preview'; renderPreview(); },
+  'add-line': el => { const di = +el.dataset.draft; ADD.drafts[di].lines.push(emptyLine()); rerenderLines(di); },
+  'del-line': el => { const di = +el.dataset.draft; ADD.drafts[di].lines.splice(+el.dataset.line, 1); rerenderLines(di); },
+  'save-drafts': () => saveDrafts(),
+  'toggle-order': el => { const id = el.dataset.id; OPEN_ORDERS.has(id) ? OPEN_ORDERS.delete(id) : OPEN_ORDERS.add(id); render(); },
+  'edit-order': el => openEditOrder(el.dataset.id),
+  'delete-order': el => {
+    const o = DB.orders.find(x => x.id === el.dataset.id); if (!o) return;
+    if (!confirm(`Eliminare l'ordine ${o.orderNumber} del ${fmtDate(o.orderDate)} (${o.pv}, ${fmtEur(o.gross)} lordo)?\nL'operazione non è annullabile (salvo backup).`)) return;
+    DB.orders = DB.orders.filter(x => x.id !== o.id); saveDB(); render(); toast('Ordine eliminato.');
+  },
+  'sort-prod': el => { const k = el.dataset.key; PROD_SORT = { key: k, dir: PROD_SORT.key === k ? -PROD_SORT.dir : (['ref', 'desc', 'category'].includes(k) ? 1 : -1) }; render(); },
+  'settings-save': () => { const s = readSettingsForm(); if (!s) return; DB.settings = s; saveDB(); closeModal(true); render(); toast('Impostazioni salvate.'); },
+  'settings-reset': () => { if (!confirm('Ripristinare soglie e parole chiave predefinite?')) return; DB.settings = JSON.parse(JSON.stringify(DEFAULT_SETTINGS)); saveDB(); openSettings(); render(); },
+  'settings-recat': () => {
+    const s = readSettingsForm(); if (!s) return;
+    if (!confirm('Ricalcolare la categoria di tutte le righe di tutti gli ordini con le parole chiave attuali? Le modifiche manuali alle categorie andranno perse.')) return;
+    DB.settings = s; DB.orders.forEach(o => o.lines.forEach(l => l.category = categorize(l.desc))); saveDB(); render(); toast('Categorie ricalcolate.');
+  },
+  'wipe-all': () => {
+    if (!confirm('Eliminare TUTTI gli ordini salvati in questo browser?')) return;
+    if (!confirm('Conferma definitiva: i dati non saranno recuperabili senza un backup. Procedere?')) return;
+    DB.orders = []; saveDB(); closeModal(true); render(); toast('Tutti gli ordini sono stati eliminati.');
+  },
+  'import-merge': () => {
+    const nums = new Set(DB.orders.map(o => o.orderNumber));
+    const add = IMPORT_DATA.orders.filter(o => !nums.has(o.orderNumber)).map(o => ({ ...o, id: DB.orders.some(x => x.id === o.id) ? uid() : o.id }));
+    DB.orders.push(...add); saveDB(); closeModal(true); render(); toast(`${add.length} ordini importati.`);
+  },
+  'import-replace': () => {
+    if (!confirm('Sostituire tutti i dati attuali con quelli del backup?')) return;
+    DB.orders = IMPORT_DATA.orders; if (IMPORT_DATA.settings) DB.settings = IMPORT_DATA.settings;
+    saveDB(); closeModal(true); render(); toast('Backup importato.');
+  }
+};
+function rerenderLines(di) {
+  $('#lines-' + di).innerHTML = ADD.drafts[di].lines.map((l, li) => lineRowHtml(di, li, l)).join('');
+  refreshDraft(di);
+}
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-action]');
+  if (!a) return;
+  const fn = ACTIONS[a.dataset.action];
+  if (fn) { e.preventDefault(); e.stopPropagation(); fn(a, e); }
+});
+// Input dell'anteprima e dei selettori PV
+document.addEventListener('input', e => {
+  const t = e.target;
+  if (!ADD || t.dataset.draft == null) return;
+  const di = +t.dataset.draft, d = ADD.drafts[di];
+  if (!d) return;
+  if (t.dataset.lfield) {
+    const l = d.lines[+t.dataset.line], k = t.dataset.lfield;
+    l[k] = t.value;
+    if (k !== 'category') {
+      t.classList.toggle('missing', L_FLAG.includes(k) && !t.value.trim());
+      t.classList.toggle('missing-soft', L_SOFT.includes(k) && !t.value.trim());
+    }
+  } else if (t.dataset.field === 'pv') {
+    d.pv = t.value; t.classList.toggle('invalid', !t.value);
+  } else if (t.dataset.field) {
+    d.f[t.dataset.field] = t.value;
+    t.classList.toggle('missing', F_FLAG.includes(t.dataset.field) && !t.value.trim());
+  }
+  refreshDraft(di);
+});
+document.addEventListener('change', e => {
+  const t = e.target;
+  if (t.dataset.filepv && ADD) {
+    const f = ADD.files.find(x => x.key === t.dataset.filepv);
+    if (f) { f.pv = t.value; renderAddStep(); }
+  } else if (t.dataset.dup != null && ADD) {
+    ADD.drafts[+t.dataset.dup].dupAction = t.value;
+  } else if (t.id === 'import-input' && t.files[0]) {
+    handleImportFile(t.files[0]); t.value = '';
+  }
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && $('#modal-root').innerHTML) closeModal(); });
+// Evita che un file trascinato fuori dall'area apra il PDF nel browser
+['dragover', 'drop'].forEach(ev => window.addEventListener(ev, e => { if (!e.target.closest || !e.target.closest('#dropzone')) e.preventDefault(); }));
+
+// Tooltip dei grafici
+const TIP = $('#tooltip');
+document.addEventListener('mousemove', e => {
+  const t = e.target.closest && e.target.closest('[data-tip]');
+  if (!t) { TIP.hidden = true; return; }
+  TIP.innerHTML = t.getAttribute('data-tip'); TIP.hidden = false;
+  const w = TIP.offsetWidth, h = TIP.offsetHeight;
+  let x = e.clientX + 14, y = e.clientY + 14;
+  if (x + w > innerWidth - 8) x = e.clientX - w - 14;
+  if (y + h > innerHeight - 8) y = e.clientY - h - 14;
+  TIP.style.left = x + 'px'; TIP.style.top = y + 'px';
+});
+
+render();
+</script>
+</body>
+</html>
