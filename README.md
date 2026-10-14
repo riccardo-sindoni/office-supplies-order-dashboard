@@ -1,5 +1,7 @@
 # Office Supplies Order Dashboard
 
+**[Live demo](https://riccardo-sindoni.github.io/office-supplies-order-dashboard/)**
+
 A single-file web dashboard (HTML + JavaScript, no backend) to monitor office and consumable supply orders across retail stores, starting from supplier order-confirmation PDFs.
 
 > **Demo version:** store names, orders, prices and addresses are all **fictitious**.
